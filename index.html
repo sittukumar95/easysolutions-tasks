@@ -182,11 +182,13 @@ function doLogin(){
   err.style.display='none';
   if(email===MANAGER_CREDS.email&&pass===MANAGER_CREDS.password){
     state.currentUser={role:'manager',name:'Manager',email,avatar:'MG',color:'#f59e0b'};
+    try{localStorage.setItem('es_currentUser',JSON.stringify(state.currentUser));}catch(e){}
     state.activeNav='dashboard';render();return;
   }
   const member=state.members.find(m=>m.email===email);
   if(member&&pass===DEFAULT_PASSWORD){
     state.currentUser={role:'member',...member};
+    try{localStorage.setItem('es_currentUser',JSON.stringify(state.currentUser));}catch(e){}
     state.activeNav='my-tasks';render();return;
   }
   err.textContent='Invalid email or password.';err.style.display='block';
@@ -451,14 +453,23 @@ function loadData(){
     const m=localStorage.getItem('es_members');
     const t=localStorage.getItem('es_tasks');
     const a=localStorage.getItem('es_announcements');
+    const u=localStorage.getItem('es_currentUser');
     if(m)state.members=JSON.parse(m);
     if(t)state.tasks=JSON.parse(t);
     if(a)state.announcements=JSON.parse(a);
+    if(u){
+      const saved=JSON.parse(u);
+      if(saved.role==='manager'){state.currentUser=saved;state.activeNav='dashboard';}
+      else{
+        const member=state.members.find(mm=>mm.email===saved.email);
+        if(member){state.currentUser={role:'member',...member};state.activeNav='my-tasks';}
+      }
+    }
   }catch(e){}
 }
 function setNav(nav){state.activeNav=nav;state.taskFilter='all';render();}
 function setFilter(f){state.taskFilter=f;render();}
-function logout(){state.currentUser=null;state.activeNav='dashboard';render();}
+function logout(){state.currentUser=null;state.activeNav='dashboard';try{localStorage.removeItem('es_currentUser');}catch(e){}render();}
 function submitTask(){
   const title=document.getElementById('m-title').value.trim();
   const desc=document.getElementById('m-desc').value.trim();
