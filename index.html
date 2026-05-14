@@ -439,6 +439,23 @@ function renderModal(){
 
 function openModal(type,data){state.modal={type,data};renderModal();}
 function closeModal(){state.modal=null;const o=document.getElementById('modal-overlay');if(o)o.remove();}
+function saveData(){
+  try{
+    localStorage.setItem('es_members',JSON.stringify(state.members));
+    localStorage.setItem('es_tasks',JSON.stringify(state.tasks));
+    localStorage.setItem('es_announcements',JSON.stringify(state.announcements));
+  }catch(e){}
+}
+function loadData(){
+  try{
+    const m=localStorage.getItem('es_members');
+    const t=localStorage.getItem('es_tasks');
+    const a=localStorage.getItem('es_announcements');
+    if(m)state.members=JSON.parse(m);
+    if(t)state.tasks=JSON.parse(t);
+    if(a)state.announcements=JSON.parse(a);
+  }catch(e){}
+}
 function setNav(nav){state.activeNav=nav;state.taskFilter='all';render();}
 function setFilter(f){state.taskFilter=f;render();}
 function logout(){state.currentUser=null;state.activeNav='dashboard';render();}
@@ -450,7 +467,7 @@ function submitTask(){
   const dueDate=document.getElementById('m-due').value;
   if(!title||!assignedTo){alert('Please fill in task title and assign to a member.');return;}
   state.tasks.push({id:'t'+Date.now(),title,description:desc,assignedTo,priority,status:'todo',dueDate,createdAt:new Date().toISOString().slice(0,10)});
-  closeModal();render();
+  saveData();closeModal();render();
 }
 function submitMember(){
   const name=document.getElementById('m-name').value.trim();
@@ -460,7 +477,7 @@ function submitMember(){
   const initials=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
   const colors=['#f59e0b','#d97706','#b45309','#e8850a','#ca8a04','#a16207'];
   state.members.push({id:'m'+Date.now(),name,email,avatar:initials,color:colors[state.members.length%colors.length]});
-  closeModal();render();
+  saveData();closeModal();render();
 }
 function submitAnnouncement(){
   const title=document.getElementById('m-ann-title').value.trim();
@@ -468,14 +485,14 @@ function submitAnnouncement(){
   const pinned=document.getElementById('m-ann-pin').checked;
   if(!title||!body){alert('Please fill in all fields.');return;}
   state.announcements.unshift({id:'a'+Date.now(),title,body,pinned,createdAt:new Date().toISOString().slice(0,10)});
-  closeModal();render();
+  saveData();closeModal();render();
 }
-function updateStatus(taskId,newStatus){const task=state.tasks.find(t=>t.id===taskId);if(task)task.status=newStatus;closeModal();render();}
-function deleteTask(taskId){if(!confirm('Delete this task permanently?'))return;state.tasks=state.tasks.filter(t=>t.id!==taskId);closeModal();render();}
-function deleteAnnouncement(id){if(!confirm('Delete this announcement?'))return;state.announcements=state.announcements.filter(a=>a.id!==id);render();}
-function removeMember(id){if(!confirm('Remove this team member?'))return;state.members=state.members.filter(m=>m.id!==id);render();}
+function updateStatus(taskId,newStatus){const task=state.tasks.find(t=>t.id===taskId);if(task)task.status=newStatus;saveData();closeModal();render();}
+function deleteTask(taskId){if(!confirm('Delete this task permanently?'))return;state.tasks=state.tasks.filter(t=>t.id!==taskId);saveData();closeModal();render();}
+function deleteAnnouncement(id){if(!confirm('Delete this announcement?'))return;state.announcements=state.announcements.filter(a=>a.id!==id);saveData();render();}
+function removeMember(id){if(!confirm('Remove this team member?'))return;state.members=state.members.filter(m=>m.id!==id);saveData();render();}
 function bindNav(){document.querySelectorAll('[data-nav]').forEach(el=>{el.onclick=()=>setNav(el.dataset.nav);});}
-render();
+loadData();render();
 </script>
 </body>
 </html>
