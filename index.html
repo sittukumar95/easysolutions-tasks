@@ -280,9 +280,20 @@ const COLORS = ['#f59e0b','#d97706','#b45309','#e8850a','#0891b2','#7c3aed','#05
 // ═══════════════════════════════════════════════════════
 // TELEGRAM
 // ═══════════════════════════════════════════════════════
-let TG_TOKEN = localStorage.getItem('es_tg_token') || '';
-let TG_CHAT  = localStorage.getItem('es_tg_chat')  || '';
+let TG_TOKEN = '';
+let TG_CHAT  = '';
 const tgOk = () => !!(TG_TOKEN && TG_CHAT);
+
+// Load TG config from Firebase on start
+function loadTGFromFirebase() {
+  db.ref('config/telegram').on('value', snap => {
+    const cfg = snap.val() || {};
+    TG_TOKEN = cfg.token || '';
+    TG_CHAT  = cfg.chat  || '';
+    // Re-render if loaded and app is ready
+    if (S.ready) render();
+  });
+}
 async function tg(msg) {
   if (!tgOk()) return;
   try {
@@ -778,10 +789,15 @@ function saveTG() {
   const t=document.getElementById('tg-t').value.trim();
   const c=document.getElementById('tg-c').value.trim();
   if(!t||!c){toast('Enter both Token and Chat ID','er');return;}
-  TG_TOKEN=t;TG_CHAT=c;localStorage.setItem('es_tg_token',t);localStorage.setItem('es_tg_chat',c);
-  toast('Telegram config saved!','ok');render();
+  db.ref('config/telegram').set({token:t,chat:c})
+    .then(()=>toast('Telegram config saved! Works on all devices ✓','ok'))
+    .catch(e=>toast('Save failed — check Firebase rules','er'));
 }
-function clearTG(){TG_TOKEN='';TG_CHAT='';localStorage.removeItem('es_tg_token');localStorage.removeItem('es_tg_chat');toast('Disconnected','in');render();}
+function clearTG(){
+  db.ref('config/telegram').remove()
+    .then(()=>toast('Disconnected','in'))
+    .catch(e=>toast('Failed','er'));
+}
 async function testTG(){if(!tgOk()){toast('Save config first','er');return;}await tg(`🧪 <b>Easy Solutions — Test</b>\n\nTelegram alerts are working! ✅\n<i>Sent from Task Manager</i>`);toast('Test message sent!','ok');}
 
 // ═══════════════════════════════════════════════════════
@@ -1360,6 +1376,7 @@ function dlMyPDF() {
 // ═══════════════════════════════════════════════════════
 render();       // Show loading screen immediately
 startFirebase(); // Connect — all data comes from Firebase
+loadTGFromFirebase(); // Load Telegram config from Firebase
 </script>
 </body>
 </html>
