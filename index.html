@@ -4,297 +4,617 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Easy Solutions — Task Manager</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
---bg:#fafaf8;--surface:#fff;--surface2:#fef9f0;--surface3:#fdf3dc;
---border:#f0e8d0;--border2:#e8d8a8;--text:#1a1608;--text2:#3d3010;
---muted:#8a7a50;--accent:#e8850a;--accent2:#f5a623;
---gold1:#fbbf24;--gold2:#f59e0b;--gold3:#d97706;--gold4:#b45309;
---dark:#1a1608;--radius:12px;--font:'Inter',sans-serif;
---shadow:0 1px 4px rgba(180,130,0,.1);--shadow-lg:0 4px 20px rgba(180,130,0,.15);
+  --bg:#f0ede6;
+  --surface:#ffffff;
+  --surface2:#faf8f4;
+  --surface3:#f5f0e8;
+  --border:#e8e0d0;
+  --border2:#d8ccb4;
+  --text:#1a1610;
+  --text2:#3a3020;
+  --muted:#9a8c70;
+  --accent:#e07808;
+  --accent2:#f5a020;
+  --gold:#f5a020;
+  --dark:#1c180e;
+  --dark2:#282010;
+  --sidebar-w:224px;
+  --topbar-h:60px;
+  --radius:10px;
+  --font:'Inter',sans-serif;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 28px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.08);
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+
+/* ════════════════════════════════ LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:230px;background:var(--dark);display:flex;flex-direction:column;flex-shrink:0;position:relative;overflow:hidden;}
-.sidebar::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(245,166,35,.12) 0%,transparent 70%);pointer-events:none;}
-.logo{padding:18px 16px;border-bottom:1px solid rgba(245,166,35,.15);display:flex;align-items:center;gap:10px;}
-.logo img{width:40px;height:40px;object-fit:contain;flex-shrink:0;}
-.logo-name{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:#f5a623;letter-spacing:.5px;}
-.logo-sub{font-size:9px;font-weight:600;color:rgba(245,166,35,.5);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
-.nav{padding:14px 10px;flex:1;overflow-y:auto;}
-.nav-section{font-size:9px;font-weight:700;color:rgba(245,166,35,.4);letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px 4px;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:400;transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;font-family:var(--font);}
-.nav-item:hover{background:rgba(245,166,35,.1);color:rgba(255,255,255,.85);}
-.nav-item.active{background:linear-gradient(135deg,rgba(245,166,35,.2),rgba(232,133,10,.15));color:#f5a623;font-weight:500;border:1px solid rgba(245,166,35,.2);}
-.nav-item .icon{font-size:15px;width:18px;text-align:center;}
-.nav-badge{margin-left:auto;background:var(--accent);color:white;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700;}
-.sidebar-bottom{padding:12px;border-top:1px solid rgba(245,166,35,.12);}
-.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.12);}
-.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
-.user-info{flex:1;min-width:0;}
-.user-name{font-size:13px;font-weight:500;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.user-role{font-size:10px;color:rgba(245,166,35,.6);}
-.logout-btn{background:none;border:none;cursor:pointer;color:rgba(245,166,35,.5);font-size:16px;}
-.logout-btn:hover{color:var(--accent2);}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.topbar{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);box-shadow:var(--shadow);flex-shrink:0;}
-.page-title{font-size:18px;font-weight:700;}
-.page-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.topbar-actions{display:flex;gap:8px;align-items:center;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;}
-.btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:white;box-shadow:0 2px 8px rgba(232,133,10,.3);}
-.btn-primary:hover{box-shadow:0 4px 14px rgba(232,133,10,.4);transform:translateY(-1px);}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);font-weight:500;}
-.btn-ghost:hover{background:var(--surface2);color:var(--text);}
-.btn-sm{padding:6px 12px;font-size:12px;}
-.btn-danger{background:rgba(239,68,68,.08);color:#dc2626;border:1px solid rgba(239,68,68,.2);}
-.btn-success{background:rgba(34,197,94,.08);color:#16a34a;border:1px solid rgba(34,197,94,.2);}
-.btn-warn{background:rgba(245,166,35,.1);color:var(--gold3);border:1px solid rgba(245,166,35,.25);}
-.btn-info{background:rgba(59,130,246,.08);color:#2563eb;border:1px solid rgba(59,130,246,.2);}
-.content{flex:1;overflow-y:auto;padding:24px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
-.stat-value{font-size:30px;font-weight:800;font-family:'Montserrat',sans-serif;margin-bottom:4px;}
-.stat-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
-.stat-stripe{height:3px;background:linear-gradient(90deg,var(--accent2),var(--gold1));border-radius:3px;margin-bottom:14px;}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
-.badge-todo{background:#f5f5f0;color:#8a7a50;border:1px solid #e8e0c8;}
-.badge-progress{background:#fff7e6;color:#d97706;border:1px solid #fcd34d;}
-.badge-done{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
-.badge-urgent{background:#fff1f0;color:#dc2626;border:1px solid #fecaca;}
-.badge-high{background:#fff7e6;color:#b45309;border:1px solid #fde68a;}
-.badge-medium{background:#fffbeb;color:#d97706;border:1px solid #fde68a;}
-.badge-low{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
-.task-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:8px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
-.task-item:hover{border-color:var(--accent2);box-shadow:0 3px 12px rgba(232,133,10,.12);transform:translateY(-1px);}
-.task-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
-.task-title{font-size:14px;font-weight:600;flex:1;}
-.task-meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
-.announcement{background:linear-gradient(135deg,#fffdf5,#fff9e8);border:1px solid rgba(245,166,35,.3);border-left:3px solid var(--accent2);border-radius:10px;padding:16px;margin-bottom:12px;}
-.announcement-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--gold3);background:rgba(245,166,35,.12);padding:2px 8px;border-radius:10px;margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;}
-.announcement-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
-.announcement-body{font-size:13px;color:var(--text2);line-height:1.6;}
-.announcement-time{font-size:11px;color:var(--muted);margin-top:8px;}
-.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#fffdf5 0%,#fef3d0 50%,#fff9e8 100%);padding:24px;}
-.login-box{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;box-shadow:0 8px 40px rgba(180,130,0,.15);}
-.login-logo{text-align:center;margin-bottom:30px;}
-.login-logo img{width:90px;height:90px;object-fit:contain;margin-bottom:12px;}
-.login-logo h1{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:var(--accent);margin-bottom:2px;}
-.login-logo p{color:var(--muted);font-size:13px;}
-.form-group{margin-bottom:16px;}
-.form-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.8px;text-transform:uppercase;}
-.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:14px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .15s;}
+
+/* ════════════════════════════════ SIDEBAR */
+.sidebar{
+  width:var(--sidebar-w);background:var(--dark);
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:relative;overflow:hidden;
+}
+.sidebar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:200px;
+  background:linear-gradient(to top,rgba(245,160,32,.04),transparent);
+  pointer-events:none;
+}
+.logo{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:10px;
+  height:var(--topbar-h);
+}
+.logo img{width:32px;height:32px;object-fit:contain;border-radius:6px;flex-shrink:0;}
+.logo-text .logo-name{
+  font-family:'Montserrat',sans-serif;font-size:12.5px;font-weight:800;
+  color:#f5a020;letter-spacing:.2px;line-height:1.2;
+}
+.logo-text .logo-sub{
+  font-size:8.5px;font-weight:600;
+  color:rgba(245,160,32,.4);letter-spacing:1.8px;text-transform:uppercase;
+}
+.nav{padding:8px 8px;flex:1;overflow-y:auto;}
+.nav::-webkit-scrollbar{width:0;}
+.nav-section{
+  font-size:8.5px;font-weight:700;
+  color:rgba(255,255,255,.2);
+  letter-spacing:1.8px;text-transform:uppercase;
+  padding:12px 8px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:8px;
+  cursor:pointer;color:rgba(255,255,255,.4);
+  font-size:13px;font-weight:400;
+  transition:all .15s;margin-bottom:1px;
+  border:none;background:none;width:100%;
+  text-align:left;font-family:var(--font);
+  position:relative;
+}
+.nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.75);}
+.nav-item.active{
+  background:rgba(245,160,32,.12);color:#f5a020;font-weight:500;
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:60%;background:#f5a020;border-radius:0 2px 2px 0;
+}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.nav-label{flex:1;}
+.nav-badge{
+  background:#e07808;color:#fff;
+  font-size:9.5px;font-weight:700;
+  padding:1px 6px;border-radius:10px;
+  min-width:18px;text-align:center;
+}
+.nav-badge.red{background:#dc2626;}
+.sidebar-footer{
+  padding:10px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.user-pill{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:8px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+}
+.avatar{
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;flex-shrink:0;font-size:11px;
+}
+.user-name{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.75);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-dept{font-size:10px;color:rgba(245,160,32,.5);display:flex;align-items:center;gap:3px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.logout-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.2);font-size:14px;padding:3px;transition:color .15s;margin-left:auto;flex-shrink:0;}
+.logout-btn:hover{color:rgba(245,160,32,.6);}
+
+/* ════════════════════════════════ MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+/* ════════════════════════════════ TOPBAR */
+.topbar{
+  height:var(--topbar-h);
+  padding:0 24px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;gap:16px;
+  box-shadow:var(--shadow-sm);
+}
+.topbar-left{}
+.page-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.2;}
+.page-sub{font-size:11.5px;color:var(--muted);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+/* ════════════════════════════════ CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ════════════════════════════════ BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:7px 14px;border-radius:7px;
+  font-size:12.5px;font-weight:600;cursor:pointer;
+  border:none;font-family:var(--font);
+  transition:all .15s;white-space:nowrap;line-height:1.4;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#f5a020,#e07808);
+  color:#fff;box-shadow:0 2px 6px rgba(224,120,8,.3);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(224,120,8,.4);}
+.btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface3);color:var(--text);border-color:var(--border2);}
+.btn-danger{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-success{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.btn-warn{background:#fffbeb;color:#d97706;border:1px solid #fde68a;}
+.btn-info{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.btn-tg{background:#e8f4fd;color:#0088cc;border:1px solid #bae6fd;}
+.btn-pdf{background:#fef2f2;color:#dc2626;border:1px solid #fecada;}
+.btn-sm{padding:5px 10px;font-size:11.5px;}
+.btn-xs{padding:3px 8px;font-size:11px;}
+
+/* ════════════════════════════════ CARDS */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
+}
+.card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+
+/* ════════════════════════════════ STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent2),var(--gold));
+}
+.stat-card.blue::before{background:linear-gradient(90deg,#60a5fa,#3b82f6);}
+.stat-card.green::before{background:linear-gradient(90deg,#34d399,#10b981);}
+.stat-card.red::before{background:linear-gradient(90deg,#f87171,#ef4444);}
+.stat-val{font-size:28px;font-weight:800;font-family:'Montserrat',sans-serif;line-height:1;}
+.stat-lbl{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+
+/* ════════════════════════════════ BADGES */
+.badge{
+  display:inline-flex;align-items:center;
+  padding:2px 8px;border-radius:20px;
+  font-size:10.5px;font-weight:600;white-space:nowrap;
+}
+.badge-todo{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;}
+.badge-progress{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}
+.badge-done{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+.badge-urgent{background:#fff1f2;color:#be123c;border:1px solid #fecdd3;}
+.badge-high{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.badge-medium{background:#fffbeb;color:#a16207;border:1px solid #fde68a;}
+.badge-low{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+.badge-overdue{background:#fff1f2;color:#be123c;border:1px solid #fecdd3;}
+.badge-recurring{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.dept-tag{
+  display:inline-flex;align-items:center;
+  padding:2px 7px;border-radius:4px;
+  font-size:10.5px;font-weight:600;
+  background:#fefce8;color:#854d0e;border:1px solid #fef08a;
+}
+
+/* ════════════════════════════════ TASK ITEMS */
+.task-list{display:flex;flex-direction:column;gap:6px;}
+.task-item{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;
+  cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;gap:6px;
+  box-shadow:var(--shadow-sm);
+}
+.task-item:hover{border-color:var(--accent2);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.task-item.overdue{border-left:3px solid #ef4444;padding-left:11px;}
+.task-item.recurring{border-left:3px solid #3b82f6;padding-left:11px;}
+.task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.task-name{font-size:13.5px;font-weight:600;color:var(--text);flex:1;line-height:1.4;}
+.task-badges{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;align-items:center;}
+.task-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.task-meta{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);}
+
+/* ════════════════════════════════ MEMBER CARDS */
+.member-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;
+  box-shadow:var(--shadow);margin-bottom:8px;
+  display:flex;align-items:flex-start;gap:14px;
+  transition:all .15s;
+}
+.member-card:hover{box-shadow:var(--shadow-md);border-color:var(--border2);}
+.member-info{flex:1;min-width:0;}
+.member-name{font-size:14px;font-weight:700;color:var(--text);}
+.member-email{font-size:11.5px;color:var(--muted);margin-top:2px;}
+.member-badges{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0;}
+.member-actions{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.progress-wrap{display:flex;align-items:center;gap:8px;}
+.prog-bar{flex:1;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.prog-pct{font-size:11px;font-weight:600;color:var(--muted);flex-shrink:0;width:28px;text-align:right;}
+
+/* ════════════════════════════════ ANNOUNCEMENTS */
+.ann-card{
+  background:linear-gradient(135deg,#fffef7,#fffbeb);
+  border:1px solid #fde68a;border-left:3px solid var(--accent2);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;
+}
+.ann-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.ann-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:700;color:#92400e;
+  background:#fef9c3;padding:2px 8px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.ann-title{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.ann-body{font-size:12.5px;color:var(--text2);line-height:1.6;}
+.ann-time{font-size:11px;color:var(--muted);margin-top:6px;}
+
+/* ════════════════════════════════ FILTERS */
+.filter-section{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;
+  margin-bottom:14px;box-shadow:var(--shadow-sm);
+}
+.filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filter-label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;flex-shrink:0;}
+.filter-sel{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:5px 10px;
+  font-size:12px;color:var(--text);font-family:var(--font);
+  outline:none;cursor:pointer;transition:border-color .15s;
+}
+.filter-sel:focus{border-color:var(--accent2);}
+.filter-divider{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+
+/* ════════════════════════════════ STATUS TABS */
+.status-tabs{display:flex;gap:3px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:14px;border:1px solid var(--border);}
+.stab{
+  flex:1;padding:6px 8px;border-radius:6px;border:none;
+  background:none;color:var(--muted);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all .15s;text-align:center;
+}
+.stab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);border:1px solid var(--border);}
+
+/* ════════════════════════════════ SEARCH */
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:8px;padding:8px 12px;margin-bottom:14px;
+  transition:border-color .15s;box-shadow:var(--shadow-sm);
+}
+.search-box:focus-within{border-color:var(--accent2);}
+.search-box input{border:none;background:none;outline:none;font-size:13px;color:var(--text);font-family:var(--font);width:100%;}
+.search-box input::placeholder{color:var(--muted);}
+.search-icon{font-size:14px;color:var(--muted);flex-shrink:0;}
+.clear-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;line-height:1;}
+.clear-btn:hover{color:var(--text);}
+
+/* ════════════════════════════════ MODAL */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;padding:20px;backdrop-filter:blur(4px);
+}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:0;width:100%;max-width:500px;
+  max-height:90vh;overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column;
+}
+.modal-head{
+  padding:18px 22px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:2px;transition:color .15s;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:18px 22px;overflow-y:auto;flex:1;}
+.modal-body::-webkit-scrollbar{width:3px;}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border2);}
+.modal-foot{
+  padding:12px 22px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  flex-shrink:0;background:var(--surface2);
+}
+
+/* ════════════════════════════════ FORMS */
+.form-group{margin-bottom:14px;}
+.form-group:last-child{margin-bottom:0;}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:.6px;text-transform:uppercase;}
+.form-input{
+  width:100%;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:7px;
+  padding:9px 12px;font-size:13.5px;color:var(--text);
+  font-family:var(--font);outline:none;transition:border-color .15s;
+}
 .form-input:focus{border-color:var(--accent2);background:#fff;}
-.form-input::placeholder{color:#c4b080;}
-select.form-input option{background:white;color:var(--text);}
-.error-msg{font-size:12px;color:#dc2626;margin-top:8px;font-weight:500;}
-.member-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--shadow);transition:all .15s;margin-bottom:10px;}
-.member-card:hover{box-shadow:var(--shadow-lg);border-color:var(--border2);}
-.modal-overlay{position:fixed;inset:0;background:rgba(26,22,8,.65);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(2px);}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:30px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(180,130,0,.2);}
-.modal h3{font-size:18px;font-weight:700;margin-bottom:20px;}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
-.status-tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border);}
-.status-tab{flex:1;padding:7px 10px;border-radius:7px;border:none;background:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
-.status-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow);border:1px solid var(--border);}
-.progress-bar{height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:6px;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold2),var(--accent2));border-radius:3px;transition:width .4s;}
-.empty{text-align:center;padding:48px 24px;color:var(--muted);}
-.empty-icon{font-size:44px;margin-bottom:12px;}
-.empty h3{font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px;}
-.divider{height:1px;background:var(--border);margin:16px 0;}
+.form-input::placeholder{color:#c0b090;}
+textarea.form-input{resize:vertical;min-height:78px;}
+select.form-input{cursor:pointer;}
+.form-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.err-msg{font-size:12px;color:#dc2626;font-weight:500;padding:6px 0;}
+
+/* ════════════════════════════════ PROGRESS BAR (global) */
+.progress-bar{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--gold));border-radius:3px;transition:width .5s ease;}
+
+/* ════════════════════════════════ CREDENTIALS BOX */
+.cred-box{background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--radius);padding:14px;}
+.cred-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed #bbf7d0;gap:8px;}
+.cred-row:last-child{border-bottom:none;}
+.cred-label{font-size:12px;color:#15803d;font-weight:600;flex-shrink:0;}
+.cred-val{font-family:'Courier New',monospace;font-size:11.5px;font-weight:700;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:4px;word-break:break-all;}
+
+/* ════════════════════════════════ REPORT */
+.report-header{
+  background:linear-gradient(135deg,var(--dark) 0%,var(--dark2) 100%);
+  border-radius:var(--radius);padding:20px 22px;color:#fff;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+}
+.report-period-tabs{display:flex;gap:3px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:14px;border:1px solid var(--border);}
+.rtab{flex:1;padding:7px;border-radius:6px;border:none;background:none;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;text-align:center;}
+.rtab.active{background:var(--dark);color:#f5a020;box-shadow:var(--shadow-sm);}
+.report-member{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow-sm);}
+.report-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+.rs{text-align:center;padding:10px 6px;border-radius:7px;}
+.rs-val{font-size:20px;font-weight:800;font-family:'Montserrat',sans-serif;line-height:1;}
+.rs-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.task-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);gap:8px;}
+.task-row:last-child{border-bottom:none;}
+.task-row-name{font-size:12.5px;font-weight:500;color:var(--text);}
+.task-row-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ════════════════════════════════ TG SETTINGS */
+.tg-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.tg-on{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
+.tg-off{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.tg-info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
+
+/* ════════════════════════════════ TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--dark);color:#fff;
+  padding:10px 16px;border-radius:8px;
+  font-size:13px;font-weight:500;z-index:9999;
+  box-shadow:var(--shadow-lg);animation:slideUp .3s ease;
+  max-width:300px;display:flex;align-items:center;gap:8px;
+}
+.toast.success{border-left:3px solid #22c55e;}
+.toast.error{border-left:3px solid #ef4444;}
+.toast.info{border-left:3px solid #60a5fa;}
+@keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ════════════════════════════════ LOGIN */
+.login-page{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#fffef8 0%,#fef5dc 45%,#fdf0c8 100%);
+  padding:24px;
+}
+.login-card{
+  width:100%;max-width:400px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:36px;box-shadow:var(--shadow-lg);
+}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo img{width:76px;height:76px;object-fit:contain;border-radius:12px;margin-bottom:10px;}
+.login-logo h1{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:800;color:var(--accent);margin-bottom:2px;}
+.login-logo p{font-size:12px;color:var(--muted);}
+
+/* ════════════════════════════════ LOADING */
+.loading-page{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#fffef8,#fef5dc);gap:14px;
+}
+.loading-page img{width:68px;height:68px;object-fit:contain;border-radius:10px;}
+.spinner{width:26px;height:26px;border:2.5px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted);}
+
+/* ════════════════════════════════ MISC */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.section-title{font-size:13px;font-weight:700;color:var(--text);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-icon{font-size:40px;margin-bottom:10px;}
+.empty-h{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:4px;}
+.empty-p{font-size:12.5px;line-height:1.5;}
 .flex{display:flex;align-items:center;}
 .flex-between{display:flex;align-items:center;justify-content:space-between;}
-.gap-8{gap:8px;}.gap-12{gap:12px;}
-.mb-8{margin-bottom:8px;}.mb-12{margin-bottom:12px;}.mb-16{margin-bottom:16px;}.mb-20{margin-bottom:20px;}
-.section-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;}
-.login-info-box{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:16px;margin-top:16px;}
-.login-info-box .info-title{font-size:12px;font-weight:700;color:#16a34a;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
-.login-info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #dcfce7;font-size:13px;}
-.login-info-row:last-child{border-bottom:none;}
-.login-info-label{color:#15803d;font-weight:500;}
-.login-info-value{font-family:'Courier New',monospace;font-weight:700;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:4px;font-size:12px;word-break:break-all;}
-.dept-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(245,166,35,.15);color:var(--gold4);border:1px solid rgba(245,166,35,.3);}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:blink 2s infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#fffdf5,#fef3d0);gap:16px;}
-.loading-screen img{width:80px;height:80px;object-fit:contain;}
-.loading-screen p{color:var(--muted);font-size:14px;}
-.spinner{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.gap-4{gap:4px}.gap-6{gap:6px}.gap-8{gap:8px}.gap-10{gap:10px}.gap-12{gap:12px}
+.mb-6{margin-bottom:6px}.mb-10{margin-bottom:10px}.mb-12{margin-bottom:12px}.mb-14{margin-bottom:14px}.mb-16{margin-bottom:16px}.mb-18{margin-bottom:18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script>
-const LOGO_DATA='data:image/jpeg;base64,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';
+const LOGO='data:image/jpeg;base64,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';
 
-// ── Firebase Setup ────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyC_placeholder_not_needed_for_rtdb",
-  databaseURL: "https://easysolutions-tasks-default-rtdb.firebaseio.com",
-  projectId: "easysolutions-tasks",
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// ── Firebase ──────────────────────────────────────────────────────
+firebase.initializeApp({databaseURL:"https://easysolutions-tasks-default-rtdb.firebaseio.com"});
+const db=firebase.database();
 
 // ── Constants ─────────────────────────────────────────────────────
-const MANAGER_EMAIL = 'manager@easysolutions.com';
-const MANAGER_PASSWORD = 'Manager@123';
-const DEPT_COLORS = ['#f59e0b','#d97706','#b45309','#e8850a','#ca8a04','#a16207','#7c3aed','#0891b2','#059669','#dc2626'];
+const MGR_EMAIL='manager@easysolutions.com';
+const MGR_PASS='Manager@123';
+const COLORS=['#f59e0b','#d97706','#b45309','#e8850a','#0891b2','#7c3aed','#059669','#dc2626','#ca8a04','#a16207'];
+
+// ── Telegram ──────────────────────────────────────────────────────
+let TG_TOKEN=localStorage.getItem('es_tg_token')||'';
+let TG_CHAT=localStorage.getItem('es_tg_chat')||'';
+const tgOk=()=>TG_TOKEN&&TG_CHAT;
+async function tg(msg){
+  if(!tgOk())return;
+  try{await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_CHAT,text:msg,parse_mode:'HTML'})});}catch(e){}
+}
 
 // ── State ─────────────────────────────────────────────────────────
-let state = {
-  currentUser: null,
-  activeNav: 'dashboard',
-  modal: null,
-  taskFilter: 'all',
-  members: {},
-  tasks: {},
-  announcements: {},
-  loaded: false
+let S={
+  user:null,nav:'dashboard',modal:null,
+  taskStatus:'all',taskDate:'all',taskMember:'all',taskCustomDate:'',
+  memberQ:'',rptPeriod:'daily',rptMember:'all',
+  members:{},tasks:{},anns:{},loaded:false
 };
 
-// ── Session (login persistence) ───────────────────────────────────
-function saveSession(u){ try{ localStorage.setItem('es_session', JSON.stringify(u)); }catch(e){} }
-function loadSession(){ try{ const s=localStorage.getItem('es_session'); return s?JSON.parse(s):null; }catch(e){ return null; } }
-function clearSession(){ try{ localStorage.removeItem('es_session'); }catch(e){} }
-
-// ── Firebase listeners ────────────────────────────────────────────
-function startListeners(){
-  db.ref('members').on('value', snap => {
-    state.members = snap.val() || {};
-    if(state.loaded) render();
-  });
-  db.ref('tasks').on('value', snap => {
-    state.tasks = snap.val() || {};
-    if(state.loaded) render();
-  });
-  db.ref('announcements').on('value', snap => {
-    state.announcements = snap.val() || {};
-    if(state.loaded) render();
-  });
-
-  // Wait for all 3 to load then show app
-  let count = 0;
-  const check = () => { count++; if(count >= 3){ state.loaded = true; restoreSession(); render(); } };
-  db.ref('members').once('value', check);
-  db.ref('tasks').once('value', check);
-  db.ref('announcements').once('value', check);
-}
-
-function restoreSession(){
-  const saved = loadSession();
-  if(!saved) return;
-  if(saved.role === 'manager'){
-    state.currentUser = saved;
-    state.activeNav = 'dashboard';
-  } else {
-    const mem = state.members[saved.id];
-    if(mem){ state.currentUser = {role:'member', ...mem}; state.activeNav = 'my-tasks'; }
-    else clearSession();
-  }
-}
+// ── Session ───────────────────────────────────────────────────────
+const saveSession=u=>{try{localStorage.setItem('es_u',JSON.stringify(u));}catch(e){}};
+const loadSession=()=>{try{const s=localStorage.getItem('es_u');return s?JSON.parse(s):null;}catch(e){return null;}};
+const clearSession=()=>{try{localStorage.removeItem('es_u');}catch(e){}};
 
 // ── Helpers ───────────────────────────────────────────────────────
-function membersArr(){ return Object.values(state.members); }
-function tasksArr(){ return Object.values(state.tasks); }
-function annsArr(){ return Object.values(state.announcements).sort((a,b)=> b.createdAt > a.createdAt ? 1 : -1); }
-
-// ── Render ────────────────────────────────────────────────────────
-function render(){
-  const root = document.getElementById('root');
-  if(!state.loaded){
-    root.innerHTML = `<div class="loading-screen"><img src="${LOGO_DATA}"><div class="spinner"></div><p>Connecting to Easy Solutions...</p></div>`;
-    return;
-  }
-  if(!state.currentUser){ root.innerHTML = renderLogin(); bindLogin(); return; }
-  if(state.currentUser.role === 'manager'){ root.innerHTML = renderManager(); bindNav(); }
-  else { root.innerHTML = renderMember(); bindNav(); }
-  if(state.modal) renderModal();
+const mArr=()=>Object.values(S.members);
+const tArr=()=>Object.values(S.tasks);
+const aArr=()=>Object.values(S.anns).sort((a,b)=>b.createdAt>a.createdAt?1:-1);
+const today=()=>new Date().toISOString().slice(0,10);
+const isOv=t=>t.dueDate&&t.dueDate<today()&&t.status!=='done';
+const fmt=d=>{if(!d)return'—';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;};
+function dateRange(p){
+  const n=new Date();let f=new Date(n);
+  if(p==='daily')f.setHours(0,0,0,0);
+  else if(p==='weekly')f.setDate(n.getDate()-7);
+  else if(p==='monthly')f=new Date(n.getFullYear(),n.getMonth(),1);
+  return{from:f.toISOString().slice(0,10),to:n.toISOString().slice(0,10)};
 }
 
-// ── Login ─────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg,type='success',ms=3000){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span><span>${msg}</span>`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),ms);
+}
+
+// ── Firebase ──────────────────────────────────────────────────────
+function initListeners(){
+  db.ref('members').on('value',s=>{S.members=s.val()||{};if(S.loaded)render();});
+  db.ref('tasks').on('value',s=>{S.tasks=s.val()||{};if(S.loaded){checkRecurring();render();}});
+  db.ref('announcements').on('value',s=>{S.anns=s.val()||{};if(S.loaded)render();});
+  let c=0;const chk=()=>{c++;if(c>=3){S.loaded=true;restoreUser();checkRecurring();render();}};
+  db.ref('members').once('value',chk);db.ref('tasks').once('value',chk);db.ref('announcements').once('value',chk);
+}
+function restoreUser(){
+  const u=loadSession();if(!u)return;
+  if(u.role==='manager'){S.user=u;S.nav='dashboard';}
+  else{const m=S.members[u.id];if(m){S.user={role:'member',...m};S.nav='my-tasks';}else clearSession();}
+}
+
+// ── Recurring ─────────────────────────────────────────────────────
+function checkRecurring(){
+  const td=today(),lk=localStorage.getItem('es_rc');
+  if(lk===td)return;localStorage.setItem('es_rc',td);
+  tArr().filter(t=>t.recurring&&t.status!=='done').forEach(t=>{
+    if(t.dueDate<td&&!tArr().some(x=>x.recurringParentId===t.id&&x.dueDate===td)){
+      const id='t'+Date.now()+Math.random().toString(36).slice(2,5);
+      db.ref('tasks/'+id).set({id,title:t.title,description:t.description,assignedTo:t.assignedTo,priority:t.priority,status:'todo',dueDate:td,createdAt:td,recurring:true,recurringParentId:t.id});
+      db.ref('tasks/'+t.id).update({status:'done'});
+      const m=S.members[t.assignedTo];
+      if(m)tg(`🔄 <b>Daily Task Renewed</b>\n\n📋 <b>${t.title}</b>\n👤 ${m.name}\n📅 Date: ${fmt(td)}\n⚡ Priority: ${t.priority}`);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════
+function render(){
+  const root=document.getElementById('root');
+  if(!S.loaded){root.innerHTML=`<div class="loading-page"><img src="${LOGO}"><div class="spinner"></div><div class="loading-text">Connecting to Easy Solutions...</div></div>`;return;}
+  if(!S.user){root.innerHTML=renderLogin();bindLogin();return;}
+  root.innerHTML=S.user.role==='manager'?renderMgrShell():renderMemShell();
+  bindNav();if(S.modal)showModal();
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────
 function renderLogin(){
-  return `<div class="login-screen"><div class="login-box">
-    <div class="login-logo">
-      <img src="${LOGO_DATA}" alt="Easy Solutions">
-      <h1>Easy Solutions</h1>
-      <p>Task Management Platform</p>
-    </div>
+  return`<div class="login-page"><div class="login-card">
+    <div class="login-logo"><img src="${LOGO}"><h1>Easy Solutions</h1><p>Task Management Platform</p></div>
     <div class="form-group"><label class="form-label">Email Address</label>
-      <input class="form-input" id="li-email" type="email" placeholder="your@easysolutions.com" autocomplete="email">
-    </div>
+      <input class="form-input" id="li-e" type="email" placeholder="your@easysolutions.com" autocomplete="email"></div>
     <div class="form-group"><label class="form-label">Password</label>
-      <input class="form-input" id="li-pass" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <div id="li-error" class="error-msg" style="display:none;margin-bottom:12px;"></div>
-    <button class="btn btn-primary" id="li-btn" style="width:100%;justify-content:center;padding:12px;font-size:14px;">Sign In →</button>
-    <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--muted);">Contact your manager for login credentials</div>
+      <input class="form-input" id="li-p" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <div id="li-err" class="err-msg" style="display:none"></div>
+    <button class="btn btn-primary" id="li-btn" style="width:100%;padding:10px;font-size:14px;margin-top:4px;">Sign In →</button>
+    <p style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:14px;">Contact your manager for login credentials</p>
   </div></div>`;
 }
 function bindLogin(){
-  document.getElementById('li-btn').onclick = doLogin;
-  document.getElementById('li-pass').onkeydown = e => { if(e.key==='Enter') doLogin(); };
+  document.getElementById('li-btn').onclick=doLogin;
+  document.getElementById('li-p').onkeydown=e=>{if(e.key==='Enter')doLogin();};
 }
 function doLogin(){
-  const email = document.getElementById('li-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('li-pass').value;
-  const err   = document.getElementById('li-error');
-  err.style.display = 'none';
-  if(email === MANAGER_EMAIL && pass === MANAGER_PASSWORD){
-    const u = {role:'manager', name:'Manager', email, avatar:'MG', color:'#f59e0b'};
-    state.currentUser = u; saveSession(u);
-    state.activeNav = 'dashboard'; render(); return;
+  const e=document.getElementById('li-e').value.trim().toLowerCase();
+  const p=document.getElementById('li-p').value;
+  const err=document.getElementById('li-err');err.style.display='none';
+  if(e===MGR_EMAIL&&p===MGR_PASS){
+    const u={role:'manager',name:'Manager',email:e,avatar:'MG',color:'#f5a020'};
+    S.user=u;saveSession(u);S.nav='dashboard';render();return;
   }
-  const mem = Object.values(state.members).find(m => m.email.toLowerCase() === email);
-  if(mem && pass === mem.password){
-    const u = {role:'member', ...mem};
-    state.currentUser = u; saveSession(u);
-    state.activeNav = 'my-tasks'; render(); return;
-  }
-  err.textContent = 'Invalid email or password. Contact your manager.';
-  err.style.display = 'block';
+  const m=mArr().find(x=>x.email.toLowerCase()===e);
+  if(m&&p===m.password){const u={role:'member',...m};S.user=u;saveSession(u);S.nav='my-tasks';render();return;}
+  err.textContent='Invalid email or password.';err.style.display='block';
 }
 
-// ── Manager Shell ─────────────────────────────────────────────────
-function renderManager(){
-  const nav = state.activeNav;
-  const pending = tasksArr().filter(t=>t.status!=='done').length;
-  let content = '';
-  if(nav==='dashboard') content = renderManagerDashboard();
-  else if(nav==='tasks') content = renderManagerTasks();
-  else if(nav==='members') content = renderManagerMembers();
-  else if(nav==='announcements') content = renderManagerAnnouncements();
-  return `<div class="app">
+// ── MANAGER SHELL ─────────────────────────────────────────────────
+function renderMgrShell(){
+  const n=S.nav;
+  const pending=tArr().filter(t=>t.status!=='done').length;
+  const overdue=tArr().filter(t=>isOv(t)).length;
+  const tgOn=tgOk();
+  let content='';
+  if(n==='dashboard')content=renderDash();
+  else if(n==='tasks')content=renderTasks();
+  else if(n==='members')content=renderMembers();
+  else if(n==='reports')content=renderReports();
+  else if(n==='announcements')content=renderAnns();
+  else if(n==='settings')content=renderSettings();
+  return`<div class="app">
     <aside class="sidebar">
-      <div class="logo"><img src="${LOGO_DATA}" alt="Logo">
-        <div><div class="logo-name">Easy Solutions</div><div class="logo-sub">Task Manager</div></div>
-      </div>
+      <div class="logo"><img src="${LOGO}"><div class="logo-text"><div class="logo-name">Easy Solutions</div><div class="logo-sub">Task Manager</div></div></div>
       <nav class="nav">
-        <div class="nav-section">Main Menu</div>
-        <button class="nav-item ${nav==='dashboard'?'active':''}" data-nav="dashboard"><span class="icon">📊</span>Dashboard</button>
-        <button class="nav-item ${nav==='tasks'?'active':''}" data-nav="tasks"><span class="icon">✅</span>All Tasks${pending?`<span class="nav-badge">${pending}</span>`:''}</button>
-        <button class="nav-item ${nav==='members'?'active':''}" data-nav="members"><span class="icon">👥</span>Team Members<span style="margin-left:auto;font-size:11px;color:rgba(245,166,35,.4)">${membersArr().length}</span></button>
-        <div class="nav-section">Communication</div>
-        <button class="nav-item ${nav==='announcements'?'active':''}" data-nav="announcements"><span class="icon">📢</span>Announcements${annsArr().length?`<span class="nav-badge">${annsArr().length}</span>`:''}</button>
+        <div class="nav-section">Main</div>
+        <button class="nav-item ${n==='dashboard'?'active':''}" data-nav="dashboard"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+        <button class="nav-item ${n==='tasks'?'active':''}" data-nav="tasks"><span class="nav-icon">✅</span><span class="nav-label">All Tasks</span>${pending?`<span class="nav-badge">${pending}</span>`:''}</button>
+        <button class="nav-item ${n==='members'?'active':''}" data-nav="members"><span class="nav-icon">👥</span><span class="nav-label">Team Members</span><span style="font-size:10px;color:rgba(255,255,255,.2);margin-left:auto">${mArr().length}</span></button>
+        <button class="nav-item ${n==='reports'?'active':''}" data-nav="reports"><span class="nav-icon">📈</span><span class="nav-label">Reports</span>${overdue?`<span class="nav-badge red">${overdue}</span>`:''}</button>
+        <div class="nav-section">Comms</div>
+        <button class="nav-item ${n==='announcements'?'active':''}" data-nav="announcements"><span class="nav-icon">📢</span><span class="nav-label">Announcements</span></button>
+        <div class="nav-section">Config</div>
+        <button class="nav-item ${n==='settings'?'active':''}" data-nav="settings"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span><span style="font-size:10px;margin-left:auto;color:${tgOn?'#22c55e':'rgba(255,255,255,.2)'}">${tgOn?'● ON':'● OFF'}</span></button>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="user-card">
-          <div class="avatar" style="background:rgba(245,166,35,.2);color:#f59e0b;font-size:11px;">MG</div>
-          <div class="user-info">
-            <div class="user-name">Manager</div>
-            <div class="user-role"><span class="sync-dot"></span>Live Sync On</div>
-          </div>
-          <button class="logout-btn" onclick="logout()" title="Sign out">↩</button>
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="avatar" style="width:30px;height:30px;background:rgba(245,160,32,.15);color:#f5a020;">MG</div>
+          <div style="flex:1;min-width:0;"><div class="user-name">Manager</div><div class="user-dept"><span class="sync-dot"></span>Live Sync</div></div>
+          <button class="logout-btn" onclick="logout()">↩</button>
         </div>
       </div>
     </aside>
@@ -302,141 +622,326 @@ function renderManager(){
   </div>`;
 }
 
-function renderManagerDashboard(){
-  const tasks=tasksArr(), members=membersArr(), anns=annsArr();
-  const total=tasks.length, done=tasks.filter(t=>t.status==='done').length;
+// ── DASHBOARD ─────────────────────────────────────────────────────
+function renderDash(){
+  const tasks=tArr(),members=mArr(),anns=aArr();
+  const total=tasks.length,done=tasks.filter(t=>t.status==='done').length;
   const inProg=tasks.filter(t=>t.status==='in-progress').length;
-  const urgent=tasks.filter(t=>t.priority==='urgent'&&t.status!=='done');
+  const ov=tasks.filter(t=>isOv(t));
   const pct=total?Math.round(done/total*100):0;
-  return `<div class="topbar"><div><div class="page-title">Dashboard</div><div class="page-sub">Real-time overview — synced across all devices</div></div>
-    <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('add-task','')">+ New Task</button></div></div>
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">Dashboard</div><div class="page-sub">Real-time team overview · ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+    <div class="topbar-right"><button class="btn btn-primary" onclick="openModal('add-task')">＋ New Task</button></div>
+  </div>
   <div class="content">
-    <div class="grid-4">
-      <div class="stat-card"><div class="stat-stripe"></div><div class="stat-value" style="color:var(--text)">${total}</div><div class="stat-label">Total Tasks</div></div>
-      <div class="stat-card"><div class="stat-stripe" style="background:linear-gradient(90deg,#fbbf24,#f59e0b)"></div><div class="stat-value" style="color:#d97706">${inProg}</div><div class="stat-label">In Progress</div></div>
-      <div class="stat-card"><div class="stat-stripe" style="background:linear-gradient(90deg,#34d399,#16a34a)"></div><div class="stat-value" style="color:#16a34a">${done}</div><div class="stat-label">Completed</div></div>
-      <div class="stat-card"><div class="stat-stripe" style="background:linear-gradient(90deg,#f87171,#dc2626)"></div><div class="stat-value" style="color:#dc2626">${urgent.length}</div><div class="stat-label">Urgent</div></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total Tasks</div></div>
+      <div class="stat-card blue"><div class="stat-val" style="color:#3b82f6">${inProg}</div><div class="stat-lbl">In Progress</div></div>
+      <div class="stat-card green"><div class="stat-val" style="color:#10b981">${done}</div><div class="stat-lbl">Completed</div></div>
+      <div class="stat-card red"><div class="stat-val" style="color:#ef4444">${ov.length}</div><div class="stat-lbl">Overdue</div></div>
     </div>
     <div class="grid-2">
       <div class="card">
-        <div class="flex-between mb-16"><span class="section-title">Team Progress</span><span style="font-size:13px;font-weight:700;color:var(--accent)">${pct}%</span></div>
-        <div class="progress-bar mb-16"><div class="progress-fill" style="width:${pct}%"></div></div>
-        ${members.length===0?'<div style="color:var(--muted);font-size:13px;">No members yet. Add team members first.</div>':
+        <div class="card-title"><span>Team Progress</span><span style="font-size:13px;font-weight:700;color:var(--accent)">${pct}%</span></div>
+        <div class="progress-bar mb-14"><div class="progress-fill" style="width:${pct}%"></div></div>
+        ${members.length===0?`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-h">No members yet</div></div>`:
           members.map(m=>{
-            const mt=tasks.filter(t=>t.assignedTo===m.id),md=mt.filter(t=>t.status==='done').length,mp=mt.length?Math.round(md/mt.length*100):0;
-            return `<div style="margin-bottom:12px;"><div class="flex-between" style="margin-bottom:5px;">
-              <div class="flex gap-8"><div class="avatar" style="width:24px;height:24px;font-size:9px;background:${m.color}22;color:${m.color};">${m.avatar}</div>
-              <span style="font-size:13px;font-weight:500">${m.name}</span>${m.department?`<span class="dept-badge">${m.department}</span>`:''}</div>
-              <span style="font-size:12px;color:var(--muted);font-weight:600">${md}/${mt.length}</span></div>
-              <div class="progress-bar"><div class="progress-fill" style="width:${mp}%;background:${m.color}"></div></div></div>`;
-          }).join('')}
+            const mt=tasks.filter(t=>t.assignedTo===m.id),md=mt.filter(t=>t.status==='done').length,mp=mt.length?Math.round(md/mt.length*100):0,mov=mt.filter(t=>isOv(t)).length;
+            return`<div style="margin-bottom:10px;">
+              <div class="flex-between mb-6">
+                <div class="flex gap-8">
+                  <div class="avatar" style="width:22px;height:22px;font-size:8px;background:${m.color}18;color:${m.color};">${m.avatar}</div>
+                  <span style="font-size:12.5px;font-weight:600;">${m.name}</span>
+                  ${m.department?`<span class="dept-tag">${m.department}</span>`:''}
+                  ${mov?`<span class="badge badge-overdue">⚠ ${mov}</span>`:''}
+                </div>
+                <span style="font-size:11px;color:var(--muted);font-weight:600;">${md}/${mt.length} done</span>
+              </div>
+              <div class="progress-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${mp}%;background:${m.color}"></div></div><span class="prog-pct">${mp}%</span></div>
+            </div>`;}).join('')}
+        ${tasks.filter(t=>t.recurring&&t.status!=='done').length?`<div style="margin-top:10px;padding:8px 10px;background:#eff6ff;border-radius:7px;border:1px solid #bfdbfe;font-size:12px;color:#1d4ed8;">🔄 ${tasks.filter(t=>t.recurring&&t.status!=='done').length} recurring task(s) active</div>`:''}
       </div>
       <div class="card">
-        <div class="flex-between mb-16"><span class="section-title">Announcements</span><button class="btn btn-ghost btn-sm" onclick="setNav('announcements')">View all</button></div>
-        ${anns.length===0?'<div style="color:var(--muted);font-size:13px;">No announcements yet.</div>':
-          anns.slice(0,2).map(a=>`<div class="announcement"><div class="announcement-badge">📢 ${a.pinned?'📌 Pinned':'Announcement'}</div><div class="announcement-title">${a.title}</div><div class="announcement-time">${a.createdAt}</div></div>`).join('')}
+        <div class="card-title"><span>Latest Announcements</span><button class="btn btn-ghost btn-sm" onclick="setNav('announcements')">View all</button></div>
+        ${anns.length===0?`<div class="empty-state"><div class="empty-icon">📣</div><div class="empty-p">No announcements yet</div></div>`:
+          anns.slice(0,3).map(a=>`<div class="ann-card">
+            <div class="ann-top"><span class="ann-badge">📢 ${a.pinned?'📌 Pinned':'Notice'}</span></div>
+            <div class="ann-title">${a.title}</div><div class="ann-time">${fmt(a.createdAt)}</div>
+          </div>`).join('')}
       </div>
     </div>
-    ${urgent.length?`<div class="card"><div class="section-title" style="color:#dc2626;margin-bottom:12px;">🔴 Urgent Tasks</div>${urgent.map(t=>renderTaskRow(t,true)).join('')}</div>`:''}
+    ${ov.length?`<div class="card"><div class="card-title" style="color:#dc2626">🔴 Overdue Tasks — ${ov.length}</div><div class="task-list">${ov.map(t=>taskRow(t,true)).join('')}</div></div>`:''}
   </div>`;
 }
 
-function renderManagerTasks(){
-  const f=state.taskFilter;
-  const all=tasksArr();
-  const filtered=f==='all'?all:all.filter(t=>t.status===f);
-  return `<div class="topbar"><div><div class="page-title">All Tasks</div><div class="page-sub">${all.length} tasks · synced in real-time</div></div>
-    <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('add-task','')">+ New Task</button></div></div>
+// ── ALL TASKS ─────────────────────────────────────────────────────
+function renderTasks(){
+  const all=tArr();let fil=[...all];
+  const td=today();
+  if(S.taskStatus!=='all')fil=fil.filter(t=>t.status===S.taskStatus);
+  if(S.taskDate==='today')fil=fil.filter(t=>t.dueDate===td);
+  else if(S.taskDate==='overdue')fil=fil.filter(t=>isOv(t));
+  else if(S.taskDate==='week'){const w=new Date();w.setDate(w.getDate()-7);fil=fil.filter(t=>t.dueDate>=w.toISOString().slice(0,10)&&t.dueDate<=td);}
+  else if(S.taskDate==='custom'&&S.taskCustomDate)fil=fil.filter(t=>t.dueDate===S.taskCustomDate);
+  if(S.taskMember!=='all')fil=fil.filter(t=>t.assignedTo===S.taskMember);
+  fil.sort((a,b)=>{const op={urgent:0,high:1,medium:2,low:3};return(op[a.priority]||4)-(op[b.priority]||4);});
+  const hasF=S.taskStatus!=='all'||S.taskDate!=='all'||S.taskMember!=='all';
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">All Tasks</div><div class="page-sub">${fil.length} of ${all.length} tasks shown</div></div>
+    <div class="topbar-right"><button class="btn btn-primary" onclick="openModal('add-task')">＋ New Task</button></div>
+  </div>
   <div class="content">
-    <div class="status-tabs">${['all','todo','in-progress','done'].map(s=>`<button class="status-tab ${f===s?'active':''}" onclick="setFilter('${s}')">${s==='all'?'All Tasks':s==='in-progress'?'In Progress':s.charAt(0).toUpperCase()+s.slice(1)}</button>`).join('')}</div>
-    ${filtered.length===0?'<div class="empty"><div class="empty-icon">📭</div><h3>No tasks found</h3></div>':filtered.map(t=>renderTaskRow(t,true)).join('')}
+    <div class="status-tabs">
+      ${['all','todo','in-progress','done'].map(s=>`<button class="stab ${S.taskStatus===s?'active':''}" onclick="setStat('${s}')">${s==='all'?'All Tasks':s==='in-progress'?'In Progress':s.charAt(0).toUpperCase()+s.slice(1)}</button>`).join('')}
+    </div>
+    <div class="filter-section">
+      <div class="filter-row">
+        <span class="filter-label">Filters:</span>
+        <select class="filter-sel" onchange="setDateF(this.value)">
+          <option value="all" ${S.taskDate==='all'?'selected':''}>📅 All Dates</option>
+          <option value="today" ${S.taskDate==='today'?'selected':''}>📌 Today</option>
+          <option value="overdue" ${S.taskDate==='overdue'?'selected':''}>🔴 Overdue</option>
+          <option value="week" ${S.taskDate==='week'?'selected':''}>📆 This Week</option>
+          <option value="custom" ${S.taskDate==='custom'?'selected':''}>🗓 Custom Date</option>
+        </select>
+        ${S.taskDate==='custom'?`<input type="date" class="filter-sel" value="${S.taskCustomDate}" onchange="setCustomD(this.value)" style="cursor:pointer;">`:''}
+        <div class="filter-divider"></div>
+        <select class="filter-sel" onchange="setMemF(this.value)">
+          <option value="all" ${S.taskMember==='all'?'selected':''}>👥 All Members</option>
+          ${mArr().map(m=>`<option value="${m.id}" ${S.taskMember===m.id?'selected':''}>${m.name}${m.department?' · '+m.department:''}</option>`).join('')}
+        </select>
+        ${hasF?`<div class="filter-divider"></div><button class="btn btn-ghost btn-sm" onclick="clearF()">✕ Clear</button>`:''}
+      </div>
+    </div>
+    ${fil.length===0?`<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-h">No tasks match filters</div><div class="empty-p">Try adjusting your filters above.</div></div>`:`<div class="task-list">${fil.map(t=>taskRow(t,true)).join('')}</div>`}
   </div>`;
 }
 
-function renderManagerMembers(){
-  const members=membersArr();
-  const depts=[...new Set(members.map(m=>m.department).filter(Boolean))];
-  return `<div class="topbar"><div><div class="page-title">Team Members</div><div class="page-sub">${members.length} members · ${depts.length} departments</div></div>
-    <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('add-member','')">+ Add Member</button></div></div>
+// ── MEMBERS ───────────────────────────────────────────────────────
+function renderMembers(){
+  const q=S.memberQ.toLowerCase();
+  const all=mArr();
+  const fil=all.filter(m=>!q||m.name.toLowerCase().includes(q)||m.email.toLowerCase().includes(q)||(m.department&&m.department.toLowerCase().includes(q)));
+  const depts=[...new Set(all.map(m=>m.department).filter(Boolean))];
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">Team Members</div><div class="page-sub">${all.length} members · ${depts.length} department${depts.length!==1?'s':''}</div></div>
+    <div class="topbar-right"><button class="btn btn-primary" onclick="openModal('add-member')">＋ Add Member</button></div>
+  </div>
   <div class="content">
-    ${members.length===0?'<div class="empty"><div class="empty-icon">👥</div><h3>No members yet</h3><p>Add your first team member.</p></div>':
-      members.map(m=>{
-        const mt=tasksArr().filter(t=>t.assignedTo===m.id);
-        const md=mt.filter(t=>t.status==='done').length,mp=mt.filter(t=>t.status==='in-progress').length,mtd=mt.filter(t=>t.status==='todo').length;
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input placeholder="Search by name, email or department..." value="${S.memberQ}" oninput="setMQ(this.value)" id="mq-input">
+      ${S.memberQ?`<button class="clear-btn" onclick="setMQ('')">✕</button>`:''}
+    </div>
+    ${fil.length===0?`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-h">No members found</div><div class="empty-p">Try a different search term.</div></div>`:
+      fil.map(m=>{
+        const mt=tArr().filter(t=>t.assignedTo===m.id);
+        const md=mt.filter(t=>t.status==='done').length,mp=mt.filter(t=>t.status==='in-progress').length,mtd=mt.filter(t=>t.status==='todo').length,mov=mt.filter(t=>isOv(t)).length;
         const pct=mt.length?Math.round(md/mt.length*100):0;
-        return `<div class="member-card">
-          <div class="avatar" style="width:50px;height:50px;font-size:15px;font-weight:700;flex-shrink:0;background:${m.color}18;color:${m.color};border:2px solid ${m.color}33;">${m.avatar}</div>
-          <div style="flex:1;min-width:0;">
-            <div class="flex gap-8 mb-8" style="flex-wrap:wrap;">
-              <span style="font-size:15px;font-weight:700;">${m.name}</span>
-              ${m.department?`<span class="dept-badge">${m.department}</span>`:''}
+        return`<div class="member-card">
+          <div class="avatar" style="width:48px;height:48px;font-size:14px;flex-shrink:0;background:${m.color}14;color:${m.color};border:2px solid ${m.color}25;">${m.avatar}</div>
+          <div class="member-info">
+            <div class="flex gap-8 mb-6 flex-wrap">
+              <span class="member-name">${m.name}</span>
+              ${m.department?`<span class="dept-tag">${m.department}</span>`:''}
             </div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.email}</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-              <span class="badge badge-progress">${mp} in progress</span>
-              <span class="badge badge-done">${md} done</span>
-              <span class="badge badge-todo">${mtd} todo</span>
+            <div class="member-email mb-8">${m.email}</div>
+            <div class="member-badges">
+              <span class="badge badge-progress">⚡ ${mp} active</span>
+              <span class="badge badge-done">✓ ${md} done</span>
+              <span class="badge badge-todo">◎ ${mtd} todo</span>
+              ${mov?`<span class="badge badge-overdue">⚠ ${mov} overdue</span>`:''}
             </div>
-            <div class="progress-bar" style="height:4px;"><div class="progress-fill" style="width:${pct}%;background:${m.color}"></div></div>
+            <div class="progress-wrap mt-8">
+              <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${m.color}"></div></div>
+              <span class="prog-pct">${pct}%</span>
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-            <button class="btn btn-warn btn-sm" onclick="openModal('assign-task','${m.id}')">+ Task</button>
-            <button class="btn btn-info btn-sm" onclick="openModal('edit-member','${m.id}')">✏️ Edit</button>
-            <button class="btn btn-ghost btn-sm" onclick="openModal('view-credentials','${m.id}')">🔑 Login</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑 Remove</button>
+          <div class="member-actions">
+            <button class="btn btn-warn btn-sm" onclick="openModal('assign-task','${m.id}')">＋ Task</button>
+            <button class="btn btn-info btn-sm" onclick="openModal('edit-member','${m.id}')">✏ Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="openModal('view-creds','${m.id}')">🔑 Login</button>
+            <button class="btn btn-danger btn-sm" onclick="delMember('${m.id}')">🗑 Remove</button>
           </div>
-        </div>`;
-      }).join('')}
+        </div>`;}).join('')}
   </div>`;
 }
 
-function renderManagerAnnouncements(){
-  const anns=annsArr();
-  return `<div class="topbar"><div><div class="page-title">Announcements</div><div class="page-sub">Visible to all team members in real-time</div></div>
-    <div class="topbar-actions"><button class="btn btn-primary" onclick="openModal('add-announcement','')">📢 Post Announcement</button></div></div>
+// ── ANNOUNCEMENTS ─────────────────────────────────────────────────
+function renderAnns(){
+  const anns=aArr();
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">Announcements</div><div class="page-sub">Broadcast messages to all team members in real-time</div></div>
+    <div class="topbar-right"><button class="btn btn-primary" onclick="openModal('add-ann')">📢 Post Announcement</button></div>
+  </div>
   <div class="content">
-    ${anns.length===0?'<div class="empty"><div class="empty-icon">📣</div><h3>No announcements yet</h3></div>':
-      anns.map(a=>`<div class="announcement">
-        <div class="flex-between mb-8"><div class="announcement-badge">📢 ${a.pinned?'📌 Pinned':'Announcement'}</div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-info btn-sm" onclick="openModal('edit-announcement','${a.id}')">✏️ Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${a.id}')">🗑 Delete</button>
+    ${anns.length===0?`<div class="empty-state"><div class="empty-icon">📣</div><div class="empty-h">No announcements yet</div><div class="empty-p">Post your first announcement to the team.</div></div>`:
+      anns.map(a=>`<div class="ann-card">
+        <div class="ann-top">
+          <span class="ann-badge">📢 ${a.pinned?'📌 Pinned':'Notice'}</span>
+          <div class="flex gap-6">
+            <button class="btn btn-info btn-xs" onclick="openModal('edit-ann','${a.id}')">✏ Edit</button>
+            <button class="btn btn-danger btn-xs" onclick="delAnn('${a.id}')">🗑</button>
           </div>
         </div>
-        <div class="announcement-title">${a.title}</div>
-        <div class="announcement-body">${a.body}</div>
-        <div class="announcement-time">Posted: ${a.createdAt}</div>
+        <div class="ann-title">${a.title}</div>
+        <div class="ann-body">${a.body}</div>
+        <div class="ann-time">Posted: ${fmt(a.createdAt)}</div>
       </div>`).join('')}
   </div>`;
 }
 
-// ── Member Shell ──────────────────────────────────────────────────
-function renderMember(){
-  const nav=state.activeNav, me=state.currentUser;
-  const myTasks=tasksArr().filter(t=>t.assignedTo===me.id);
-  const pending=myTasks.filter(t=>t.status!=='done').length;
-  let content='';
-  if(nav==='my-tasks') content=renderMemberTasks();
-  else if(nav==='announcements') content=renderMemberAnnouncements();
-  return `<div class="app">
-    <aside class="sidebar">
-      <div class="logo"><img src="${LOGO_DATA}" alt="Logo">
-        <div><div class="logo-name">Easy Solutions</div><div class="logo-sub">Task Manager</div></div>
+// ── SETTINGS ─────────────────────────────────────────────────────
+function renderSettings(){
+  const on=tgOk();
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">Settings</div><div class="page-sub">Telegram alerts & app configuration</div></div>
+  </div>
+  <div class="content">
+    <div class="card mb-14">
+      <div class="flex-between mb-14">
+        <div class="flex gap-8"><span style="font-size:16px;">📱</span><span class="section-title">Telegram Alerts</span></div>
+        <span class="tg-status-badge ${on?'tg-on':'tg-off'}">${on?'● Connected':'● Not Connected'}</span>
       </div>
+      ${on?`<div class="tg-info-box mb-14">
+        <div style="font-size:12px;color:#1d4ed8;font-weight:600;margin-bottom:4px;">Active Configuration</div>
+        <div style="font-size:12px;color:#2563eb;">Token: ${TG_TOKEN.slice(0,14)}...${TG_TOKEN.slice(-5)}</div>
+        <div style="font-size:12px;color:#2563eb;">Chat ID: ${TG_CHAT}</div>
+      </div>`:''}
+      <div class="form-row mb-14">
+        <div class="form-group" style="margin:0"><label class="form-label">Bot Token</label><input class="form-input" id="tg-tok" placeholder="8560911883:AAH0A1Tk..." value="${TG_TOKEN}"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Group Chat ID</label><input class="form-input" id="tg-cht" placeholder="-5055894419" value="${TG_CHAT}"></div>
+      </div>
+      <div class="flex gap-8 flex-wrap">
+        <button class="btn btn-primary" onclick="saveTG()">💾 Save Config</button>
+        <button class="btn btn-tg" onclick="testTG()">🧪 Send Test Message</button>
+        ${on?`<button class="btn btn-danger btn-sm" onclick="clearTG()">Disconnect</button>`:''}
+      </div>
+      <div style="margin-top:14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;">Alerts sent automatically:</div>
+        <div style="font-size:12px;color:var(--muted);line-height:2;">
+          ✅ Task assigned to member — with name, priority, due date<br>
+          🔄 Task status updated — with new status & assignee<br>
+          🔄 Recurring task carried to next day<br>
+          📢 New announcement posted to team
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="flex gap-8 mb-14"><span style="font-size:16px;">🔑</span><span class="section-title">Manager Login Credentials</span></div>
+      <div class="cred-box">
+        <div class="cred-row"><span class="cred-label">🌐 URL</span><span class="cred-val">sittukumar95.github.io/easysolutions-tasks</span></div>
+        <div class="cred-row"><span class="cred-label">📧 Email</span><span class="cred-val">${MGR_EMAIL}</span></div>
+        <div class="cred-row"><span class="cred-label">🔒 Password</span><span class="cred-val">${MGR_PASS}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+function saveTG(){
+  const t=document.getElementById('tg-tok').value.trim();
+  const c=document.getElementById('tg-cht').value.trim();
+  if(!t||!c){toast('Enter both Token and Chat ID','error');return;}
+  TG_TOKEN=t;TG_CHAT=c;localStorage.setItem('es_tg_token',t);localStorage.setItem('es_tg_chat',c);
+  toast('Telegram config saved! ✓','success');render();
+}
+function clearTG(){TG_TOKEN='';TG_CHAT='';localStorage.removeItem('es_tg_token');localStorage.removeItem('es_tg_chat');toast('Disconnected','info');render();}
+async function testTG(){if(!tgOk()){toast('Save config first','error');return;}await tg(`🧪 <b>Easy Solutions — Test Message</b>\n\nTelegram alerts are working! ✅`);toast('Test message sent!','success');}
+
+// ── REPORTS ───────────────────────────────────────────────────────
+function renderReports(){
+  const p=S.rptPeriod,{from,to}=dateRange(p);
+  const all=tArr(),mems=mArr();
+  const rMems=S.rptMember==='all'?mems:mems.filter(m=>m.id===S.rptMember);
+  const totDone=all.filter(t=>t.status==='done').length,totOv=all.filter(t=>isOv(t)).length,totIP=all.filter(t=>t.status==='in-progress').length;
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">Reports</div><div class="page-sub">Daily · Weekly · Monthly work summaries with PDF export</div></div>
+    <div class="topbar-right">
+      <select class="filter-sel" onchange="S.rptMember=this.value;render()">
+        <option value="all">👥 All Members</option>
+        ${mems.map(m=>`<option value="${m.id}" ${S.rptMember===m.id?'selected':''}>${m.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-pdf" onclick="dlPDF()">📄 Download PDF</button>
+    </div>
+  </div>
+  <div class="content" id="rpt-content">
+    <div class="report-period-tabs">
+      ${['daily','weekly','monthly'].map(x=>`<button class="rtab ${p===x?'active':''}" onclick="S.rptPeriod='${x}';render()">${x.charAt(0).toUpperCase()+x.slice(1)}</button>`).join('')}
+    </div>
+    <div class="report-header">
+      <div>
+        <div style="font-size:10px;color:rgba(245,160,32,.5);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Easy Solutions</div>
+        <div style="font-size:18px;font-weight:700;color:#fff;">${p.charAt(0).toUpperCase()+p.slice(1)} Work Report</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px;">${fmt(from)} — ${fmt(to)}</div>
+      </div>
+      <div class="flex gap-12">
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:#f5a020;font-family:'Montserrat',sans-serif;">${totDone}</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">Done</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:#60a5fa;font-family:'Montserrat',sans-serif;">${totIP}</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">Active</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:#f87171;font-family:'Montserrat',sans-serif;">${totOv}</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">Overdue</div></div>
+      </div>
+    </div>
+    ${rMems.length===0?`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-h">No members found</div></div>`:
+      rMems.map(m=>{
+        const mt=all.filter(t=>t.assignedTo===m.id);
+        const mDone=mt.filter(t=>t.status==='done').length,mIP=mt.filter(t=>t.status==='in-progress').length,mOv=mt.filter(t=>isOv(t)).length;
+        const pct=mt.length?Math.round(mDone/mt.length*100):0;
+        return`<div class="report-member">
+          <div class="flex-between mb-12">
+            <div class="flex gap-10">
+              <div class="avatar" style="width:42px;height:42px;font-size:13px;background:${m.color}14;color:${m.color};border:2px solid ${m.color}25;">${m.avatar}</div>
+              <div>
+                <div style="font-size:14px;font-weight:700;">${m.name}</div>
+                <div style="font-size:11.5px;color:var(--muted);">${m.department||'—'} · ${m.email}</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:22px;font-weight:800;font-family:'Montserrat',sans-serif;color:${pct>=70?'#10b981':pct>=40?'#d97706':'#ef4444'}">${pct}%</div>
+              <div style="font-size:10px;color:var(--muted);">completion</div>
+            </div>
+          </div>
+          <div class="report-stats">
+            <div class="rs" style="background:var(--surface2);border-radius:7px;"><div class="rs-val">${mt.length}</div><div class="rs-lbl">Total</div></div>
+            <div class="rs" style="background:#f0fdf4;border-radius:7px;"><div class="rs-val" style="color:#10b981;">${mDone}</div><div class="rs-lbl">Done</div></div>
+            <div class="rs" style="background:#fffbeb;border-radius:7px;"><div class="rs-val" style="color:#d97706;">${mIP}</div><div class="rs-lbl">Active</div></div>
+            <div class="rs" style="background:#fff1f2;border-radius:7px;"><div class="rs-val" style="color:#ef4444;">${mOv}</div><div class="rs-lbl">Overdue</div></div>
+          </div>
+          <div class="progress-wrap mb-12"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${m.color}"></div></div><span class="prog-pct">${pct}%</span></div>
+          ${mt.length?`<div style="font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Task Details</div>
+          ${mt.map(t=>`<div class="task-row">
+            <div><div class="task-row-name">${t.title}${t.recurring?` <span class="badge badge-recurring" style="font-size:9px;">🔄 Daily</span>`:''}</div>
+            <div class="task-row-meta">Assigned: ${fmt(t.createdAt)} · Due: ${fmt(t.dueDate)}</div></div>
+            <div class="flex gap-4">
+              <span class="badge ${'done'===t.status?'badge-done':'in-progress'===t.status?'badge-progress':'badge-todo'}">${t.status==='in-progress'?'Active':t.status==='done'?'Done':'Todo'}</span>
+              ${isOv(t)?'<span class="badge badge-overdue">⚠</span>':''}
+            </div>
+          </div>`).join('')}`:'<div style="color:var(--muted);font-size:12.5px;padding:8px 0;">No tasks assigned.</div>'}
+        </div>`;}).join('')}
+  </div>`;
+}
+
+// ── MEMBER SHELL ──────────────────────────────────────────────────
+function renderMemShell(){
+  const n=S.nav,me=S.user;
+  const myT=tArr().filter(t=>t.assignedTo===me.id);
+  const pend=myT.filter(t=>t.status!=='done').length,ov=myT.filter(t=>isOv(t)).length;
+  let content='';
+  if(n==='my-tasks')content=renderMyTasks();
+  else if(n==='announcements')content=renderMemAnns();
+  else if(n==='my-report')content=renderMyReport();
+  return`<div class="app">
+    <aside class="sidebar">
+      <div class="logo"><img src="${LOGO}"><div class="logo-text"><div class="logo-name">Easy Solutions</div><div class="logo-sub">Task Manager</div></div></div>
       <nav class="nav">
         <div class="nav-section">My Work</div>
-        <button class="nav-item ${nav==='my-tasks'?'active':''}" data-nav="my-tasks"><span class="icon">✅</span>My Tasks${pending?`<span class="nav-badge">${pending}</span>`:''}</button>
+        <button class="nav-item ${n==='my-tasks'?'active':''}" data-nav="my-tasks"><span class="nav-icon">✅</span><span class="nav-label">My Tasks</span>${pend?`<span class="nav-badge">${pend}</span>`:''}</button>
+        <button class="nav-item ${n==='my-report'?'active':''}" data-nav="my-report"><span class="nav-icon">📈</span><span class="nav-label">My Report</span>${ov?`<span class="nav-badge red">${ov}</span>`:''}</button>
         <div class="nav-section">Team</div>
-        <button class="nav-item ${nav==='announcements'?'active':''}" data-nav="announcements"><span class="icon">📢</span>Announcements${annsArr().length?`<span class="nav-badge">${annsArr().length}</span>`:''}</button>
+        <button class="nav-item ${n==='announcements'?'active':''}" data-nav="announcements"><span class="nav-icon">📢</span><span class="nav-label">Announcements</span>${aArr().length?`<span class="nav-badge">${aArr().length}</span>`:''}</button>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="user-card">
-          <div class="avatar" style="width:32px;height:32px;font-size:11px;background:${me.color}20;color:${me.color};">${me.avatar}</div>
-          <div class="user-info">
-            <div class="user-name">${me.name}</div>
-            <div class="user-role"><span class="sync-dot"></span>${me.department||'Team Member'}</div>
-          </div>
-          <button class="logout-btn" onclick="logout()" title="Sign out">↩</button>
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="avatar" style="width:30px;height:30px;font-size:10px;background:${me.color}18;color:${me.color};">${me.avatar}</div>
+          <div style="flex:1;min-width:0;"><div class="user-name">${me.name}</div><div class="user-dept"><span class="sync-dot"></span>${me.department||'Team Member'}</div></div>
+          <button class="logout-btn" onclick="logout()">↩</button>
         </div>
       </div>
     </aside>
@@ -444,273 +949,398 @@ function renderMember(){
   </div>`;
 }
 
-function renderMemberTasks(){
-  const me=state.currentUser, myTasks=tasksArr().filter(t=>t.assignedTo===me.id);
-  const f=state.taskFilter, filtered=f==='all'?myTasks:myTasks.filter(t=>t.status===f);
-  const done=myTasks.filter(t=>t.status==='done').length, pct=myTasks.length?Math.round(done/myTasks.length*100):0;
-  return `<div class="topbar"><div><div class="page-title">My Tasks</div><div class="page-sub">${myTasks.length} assigned · ${pct}% complete</div></div></div>
+function renderMyTasks(){
+  const me=S.user,myT=tArr().filter(t=>t.assignedTo===me.id);
+  const f=S.taskStatus,fil=f==='all'?myT:myT.filter(t=>t.status===f);
+  const done=myT.filter(t=>t.status==='done').length,pct=myT.length?Math.round(done/myT.length*100):0,ov=myT.filter(t=>isOv(t)).length;
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">My Tasks</div><div class="page-sub">${myT.length} assigned · ${pct}% complete${ov?` · ⚠ ${ov} overdue`:''}</div></div>
+  </div>
   <div class="content">
-    <div class="grid-3" style="margin-bottom:20px;">
-      <div class="stat-card"><div class="stat-stripe" style="background:#e5e7eb"></div><div class="stat-value" style="color:var(--muted)">${myTasks.filter(t=>t.status==='todo').length}</div><div class="stat-label">To Do</div></div>
-      <div class="stat-card"><div class="stat-stripe"></div><div class="stat-value" style="color:var(--accent)">${myTasks.filter(t=>t.status==='in-progress').length}</div><div class="stat-label">In Progress</div></div>
-      <div class="stat-card"><div class="stat-stripe" style="background:linear-gradient(90deg,#34d399,#16a34a)"></div><div class="stat-value" style="color:#16a34a">${done}</div><div class="stat-label">Completed</div></div>
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-val" style="color:var(--muted)">${myT.filter(t=>t.status==='todo').length}</div><div class="stat-lbl">To Do</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--accent)">${myT.filter(t=>t.status==='in-progress').length}</div><div class="stat-lbl">In Progress</div></div>
+      <div class="stat-card green"><div class="stat-val" style="color:#10b981">${done}</div><div class="stat-lbl">Completed</div></div>
     </div>
-    <div class="card mb-16">
-      <div class="flex-between mb-8"><span style="font-size:13px;font-weight:600;">Overall Completion</span><span style="font-size:14px;font-weight:800;font-family:'Montserrat',sans-serif;color:var(--accent)">${pct}%</span></div>
-      <div class="progress-bar" style="height:8px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="card mb-14">
+      <div class="flex-between mb-8"><span style="font-size:13px;font-weight:600;">Completion Rate</span><span style="font-size:16px;font-weight:800;font-family:'Montserrat',sans-serif;color:${pct>=70?'#10b981':pct>=40?'#d97706':'#ef4444'}">${pct}%</span></div>
+      <div class="progress-bar" style="height:7px;"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>
-    <div class="status-tabs">${['all','todo','in-progress','done'].map(s=>`<button class="status-tab ${f===s?'active':''}" onclick="setFilter('${s}')">${s==='all'?'All':s==='in-progress'?'In Progress':s.charAt(0).toUpperCase()+s.slice(1)}</button>`).join('')}</div>
-    ${filtered.length===0?'<div class="empty"><div class="empty-icon">🎉</div><h3>All clear!</h3><p>No tasks here.</p></div>':filtered.map(t=>renderTaskRow(t,false)).join('')}
+    <div class="status-tabs">${['all','todo','in-progress','done'].map(s=>`<button class="stab ${f===s?'active':''}" onclick="setStat('${s}')">${s==='all'?'All':s==='in-progress'?'In Progress':s.charAt(0).toUpperCase()+s.slice(1)}</button>`).join('')}</div>
+    ${fil.length===0?`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-h">All clear!</div><div class="empty-p">No tasks in this category.</div></div>`:`<div class="task-list">${fil.map(t=>taskRow(t,false)).join('')}</div>`}
   </div>`;
 }
 
-function renderMemberAnnouncements(){
-  const anns=annsArr();
-  return `<div class="topbar"><div><div class="page-title">Announcements</div><div class="page-sub">Messages from your manager</div></div></div>
+function renderMemAnns(){
+  const anns=aArr();
+  return`<div class="topbar"><div class="topbar-left"><div class="page-title">Announcements</div><div class="page-sub">Messages from your manager</div></div></div>
   <div class="content">
-    ${anns.length===0?'<div class="empty"><div class="empty-icon">📭</div><h3>No announcements</h3></div>':
-      anns.map(a=>`<div class="announcement"><div class="announcement-badge">📢 ${a.pinned?'📌 Pinned':'Announcement'}</div>
-        <div class="announcement-title">${a.title}</div><div class="announcement-body">${a.body}</div>
-        <div class="announcement-time">Posted: ${a.createdAt}</div>
+    ${anns.length===0?`<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-h">No announcements yet</div></div>`:
+      anns.map(a=>`<div class="ann-card"><div class="ann-top"><span class="ann-badge">📢 ${a.pinned?'📌 Pinned':'Notice'}</span></div>
+        <div class="ann-title">${a.title}</div><div class="ann-body">${a.body}</div>
+        <div class="ann-time">Posted: ${fmt(a.createdAt)}</div>
       </div>`).join('')}
   </div>`;
 }
 
-// ── Task Row ──────────────────────────────────────────────────────
-function renderTaskRow(task, isManager){
-  const member=state.members[task.assignedTo];
-  const pc={'urgent':'badge-urgent','high':'badge-high','medium':'badge-medium','low':'badge-low'}[task.priority]||'badge-todo';
-  const sc={'todo':'badge-todo','in-progress':'badge-progress','done':'badge-done'}[task.status]||'badge-todo';
-  const sl=task.status==='in-progress'?'In Progress':task.status.charAt(0).toUpperCase()+task.status.slice(1);
-  return `<div class="task-item" onclick="openModal('view-task','${task.id}')">
-    <div class="task-header"><div class="task-title">${task.title}</div><span class="badge ${pc}">${task.priority}</span></div>
-    <div class="task-meta">
-      ${member?`<div class="flex gap-8"><div class="avatar" style="width:20px;height:20px;font-size:8px;background:${member.color}18;color:${member.color};">${member.avatar}</div><span>${member.name}</span>${member.department?`<span class="dept-badge">${member.department}</span>`:''}</div>`:''}
-      <span>📅 ${task.dueDate||'No date'}</span><span class="badge ${sc}">${sl}</span>
+function renderMyReport(){
+  const me=S.user,p=S.rptPeriod,{from,to}=dateRange(p);
+  const myT=tArr().filter(t=>t.assignedTo===me.id);
+  const done=myT.filter(t=>t.status==='done').length,ip=myT.filter(t=>t.status==='in-progress').length,ov=myT.filter(t=>isOv(t)).length;
+  const pct=myT.length?Math.round(done/myT.length*100):0;
+  return`<div class="topbar">
+    <div class="topbar-left"><div class="page-title">My Report</div><div class="page-sub">Personal performance summary</div></div>
+    <div class="topbar-right"><button class="btn btn-pdf" onclick="dlMyPDF()">📄 Download PDF</button></div>
+  </div>
+  <div class="content">
+    <div class="report-period-tabs">${['daily','weekly','monthly'].map(x=>`<button class="rtab ${p===x?'active':''}" onclick="S.rptPeriod='${x}';render()">${x.charAt(0).toUpperCase()+x.slice(1)}</button>`).join('')}</div>
+    <div class="report-header">
+      <div>
+        <div style="font-size:10px;color:rgba(245,160,32,.5);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">${p} report</div>
+        <div style="font-size:18px;font-weight:700;color:#fff;">${me.name}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;">${me.department||'—'} · ${fmt(from)} — ${fmt(to)}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:32px;font-weight:800;font-family:'Montserrat',sans-serif;color:${pct>=70?'#34d399':pct>=40?'#fbbf24':'#f87171'}">${pct}%</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);">completion rate</div>
+      </div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-val">${myT.length}</div><div class="stat-lbl">Total</div></div>
+      <div class="stat-card green"><div class="stat-val" style="color:#10b981">${done}</div><div class="stat-lbl">Done</div></div>
+      <div class="stat-card blue"><div class="stat-val" style="color:#3b82f6">${ip}</div><div class="stat-lbl">Active</div></div>
+      <div class="stat-card red"><div class="stat-val" style="color:#ef4444">${ov}</div><div class="stat-lbl">Overdue</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title mb-12">All My Tasks</div>
+      ${myT.length===0?`<div style="color:var(--muted);font-size:12.5px;">No tasks assigned yet.</div>`:
+        myT.map(t=>`<div class="task-row">
+          <div><div class="task-row-name">${t.title}${t.recurring?` <span class="badge badge-recurring" style="font-size:9px;">🔄</span>`:''}</div>
+          <div class="task-row-meta">Assigned: ${fmt(t.createdAt)} · Due: ${fmt(t.dueDate)}</div></div>
+          <div class="flex gap-4">
+            <span class="badge ${'done'===t.status?'badge-done':'in-progress'===t.status?'badge-progress':'badge-todo'}">${t.status==='in-progress'?'Active':t.status==='done'?'Done':'Todo'}</span>
+            ${isOv(t)?'<span class="badge badge-overdue">⚠ Overdue</span>':''}
+          </div>
+        </div>`).join('')}
     </div>
   </div>`;
 }
 
-// ── Modals ────────────────────────────────────────────────────────
-function renderModal(){
-  const ex=document.getElementById('modal-overlay'); if(ex) ex.remove();
-  const {type, data}=state.modal;
-  let html='';
+// ── TASK ROW ──────────────────────────────────────────────────────
+function taskRow(t,isMgr){
+  const m=S.members[t.assignedTo];
+  const pc={'urgent':'badge-urgent','high':'badge-high','medium':'badge-medium','low':'badge-low'}[t.priority]||'badge-todo';
+  const sc={'todo':'badge-todo','in-progress':'badge-progress','done':'badge-done'}[t.status]||'badge-todo';
+  const sl=t.status==='in-progress'?'In Progress':t.status==='done'?'Done':'To Do';
+  const ov=isOv(t);
+  return`<div class="task-item${ov?' overdue':''}${t.recurring?' recurring':''}" onclick="openModal('view-task','${t.id}')">
+    <div class="task-top">
+      <div class="task-name">${t.title}</div>
+      <div class="task-badges">
+        <span class="badge ${pc}">${t.priority}</span>
+        <span class="badge ${sc}">${sl}</span>
+        ${ov?'<span class="badge badge-overdue">⚠ Overdue</span>':''}
+        ${t.recurring?'<span class="badge badge-recurring">🔄 Daily</span>':''}
+      </div>
+    </div>
+    <div class="task-bottom">
+      ${m?`<div class="task-meta"><div class="avatar" style="width:16px;height:16px;font-size:7px;background:${m.color}14;color:${m.color};">${m.avatar}</div><span>${m.name}</span>${m.department?`<span class="dept-tag" style="padding:1px 5px;font-size:10px;">${m.department}</span>`:''}</div>`:''}
+      <div class="task-meta">📌 ${fmt(t.createdAt)}</div>
+      <div class="task-meta">📅 ${fmt(t.dueDate)}</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════════════════════════
+function showModal(){
+  const ex=document.getElementById('mo');if(ex)ex.remove();
+  const{type,data}=S.modal;let body='',title='',foot='';
 
   if(type==='add-member'||type==='edit-member'){
-    const m=type==='edit-member'?state.members[data]:null;
-    html=`<div class="modal"><h3>${type==='edit-member'?'Edit Member':'Add Team Member'}</h3>
-      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="m-name" placeholder="e.g. Rahul Verma" value="${m?m.name:''}"></div>
-      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" id="m-email" type="email" placeholder="rahul@easysolutions.com" value="${m?m.email:''}"></div>
-      <div class="form-group"><label class="form-label">Password</label>
-        <input class="form-input" id="m-password" type="text" placeholder="e.g. Rahul@123" value="${m?m.password:''}">
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Share this password with the member to login.</div>
+    const m=type==='edit-member'?S.members[data]:null;
+    title=type==='edit-member'?'Edit Team Member':'Add Team Member';
+    body=`<div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="m-nm" placeholder="Rahul Verma" value="${m?m.name:''}"></div>
+        <div class="form-group"><label class="form-label">Department</label>
+          <input class="form-input" id="m-dp" list="dpl" placeholder="Engineering..." value="${m&&m.department?m.department:''}">
+          <datalist id="dpl">${[...new Set(mArr().map(x=>x.department).filter(Boolean))].map(d=>`<option value="${d}">`).join('')}</datalist>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Department</label>
-        <input class="form-input" id="m-dept" list="dept-list" placeholder="e.g. Engineering, Design, Sales..." value="${m&&m.department?m.department:''}">
-        <datalist id="dept-list">
-          ${[...new Set(membersArr().map(x=>x.department).filter(Boolean))].map(d=>`<option value="${d}">`).join('')}
-        </datalist>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="${type==='edit-member'?`updateMember('${data}')`:'addMember()'}">${type==='edit-member'?'Save Changes':'Add Member'}</button>
-      </div>
-    </div>`;
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" id="m-em" type="email" placeholder="rahul@easysolutions.com" value="${m?m.email:''}"></div>
+      <div class="form-group"><label class="form-label">Login Password</label>
+        <input class="form-input" id="m-pw" type="text" placeholder="e.g. Rahul@123" value="${m?m.password:''}">
+        <div class="form-hint">Share this password with the member so they can login.</div>
+      </div>`;
+    foot=`<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="${type==='edit-member'?`updMember('${data}')`:'addMember()'}">${type==='edit-member'?'Save Changes':'Add Member'}</button>`;
   }
-
-  else if(type==='view-credentials'){
-    const m=state.members[data]; if(!m){closeModal();return;}
-    html=`<div class="modal"><h3>🔑 Login Credentials</h3>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Share these with <strong style="color:var(--text)">${m.name}</strong></div>
-      <div class="login-info-box">
-        <div class="info-title">✅ Login Details — ${m.name}</div>
-        <div class="login-info-row"><span class="login-info-label">🌐 URL</span><span class="login-info-value">sittukumar95.github.io/easysolutions-tasks</span></div>
-        <div class="login-info-row"><span class="login-info-label">📧 Email</span><span class="login-info-value">${m.email}</span></div>
-        <div class="login-info-row"><span class="login-info-label">🔒 Password</span><span class="login-info-value">${m.password}</span></div>
-        <div class="login-info-row"><span class="login-info-label">🏢 Department</span><span class="login-info-value">${m.department||'—'}</span></div>
+  else if(type==='view-creds'){
+    const m=S.members[data];if(!m){closeModal();return;}
+    title='🔑 Login Credentials';
+    body=`<p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Share these details with <strong style="color:var(--text)">${m.name}</strong></p>
+      <div class="cred-box">
+        <div class="cred-row"><span class="cred-label">🌐 URL</span><span class="cred-val">sittukumar95.github.io/easysolutions-tasks</span></div>
+        <div class="cred-row"><span class="cred-label">📧 Email</span><span class="cred-val">${m.email}</span></div>
+        <div class="cred-row"><span class="cred-label">🔒 Password</span><span class="cred-val">${m.password}</span></div>
+        <div class="cred-row"><span class="cred-label">🏢 Department</span><span class="cred-val">${m.department||'—'}</span></div>
       </div>
-      <button onclick="copyCredentials('${m.name}','${m.email}','${m.password}')" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px;">📋 Copy to Clipboard</button>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>
-    </div>`;
+      <button onclick="copyCreds('${m.name}','${m.email}','${m.password}')" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;">📋 Copy to Clipboard</button>`;
+    foot=`<button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
   }
-
   else if(type==='add-task'||type==='assign-task'){
     const pre=type==='assign-task'?data:'';
-    html=`<div class="modal"><h3>Create New Task</h3>
-      <div class="form-group"><label class="form-label">Task Title</label><input class="form-input" id="m-title" placeholder="e.g. Fix login bug"></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="m-desc" rows="3" placeholder="Describe the task..."></textarea></div>
-      <div class="form-group"><label class="form-label">Assign To</label><select class="form-input" id="m-assign"><option value="">Select member...</option>${membersArr().map(m=>`<option value="${m.id}" ${m.id===pre?'selected':''}>${m.name}${m.department?' ('+m.department+')':''}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="m-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
-      <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="m-due" type="date"></div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitTask()">Create Task</button></div>
-    </div>`;
-  }
-
-  else if(type==='view-task'){
-    const task=state.tasks[data]; if(!task){closeModal();return;}
-    const member=state.members[task.assignedTo];
-    const isManager=state.currentUser.role==='manager', isMine=state.currentUser.id===task.assignedTo;
-    const pc={'urgent':'badge-urgent','high':'badge-high','medium':'badge-medium','low':'badge-low'}[task.priority]||'badge-todo';
-    const sc={'todo':'badge-todo','in-progress':'badge-progress','done':'badge-done'}[task.status]||'badge-todo';
-    html=`<div class="modal">
-      <div class="flex-between mb-16"><h3 style="margin-bottom:0;">${task.title}</h3>
-        ${isManager?`<div style="display:flex;gap:6px;"><button class="btn btn-info btn-sm" onclick="openModal('edit-task','${task.id}')">✏️ Edit</button><button class="btn btn-danger btn-sm" onclick="deleteTask('${task.id}')">🗑 Delete</button></div>`:''}
+    title='Create New Task';
+    body=`<div class="form-group"><label class="form-label">Task Title</label><input class="form-input" id="t-ti" placeholder="e.g. Fix login bug"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="t-de" placeholder="Describe what needs to be done..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Assign To</label><select class="form-input" id="t-as"><option value="">Select member...</option>${mArr().map(m=>`<option value="${m.id}" ${m.id===pre?'selected':''}>${m.name}${m.department?' · '+m.department:''}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="t-pr"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select></div>
       </div>
-      <div style="color:var(--muted);font-size:13px;line-height:1.7;padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:16px;">${task.description||'No description.'}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;font-size:13px;">
-        <div><div class="form-label" style="margin-bottom:6px;">Assigned To</div>
-          <div class="flex gap-8">${member?`<div class="avatar" style="width:24px;height:24px;font-size:9px;background:${member.color}18;color:${member.color};">${member.avatar}</div><div><div style="font-weight:500">${member.name}</div>${member.department?`<span class="dept-badge">${member.department}</span>`:''}</div>`:'Unassigned'}</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="t-du" type="date"></div>
+        <div class="form-group"><label class="form-label">Recurring Daily</label>
+          <select class="form-input" id="t-rc"><option value="">No — one time</option><option value="yes">🔄 Yes — repeat daily</option></select>
+          <div class="form-hint">Auto-carries to next day at midnight IST</div>
         </div>
-        <div><div class="form-label" style="margin-bottom:6px;">Due Date</div><div>📅 ${task.dueDate||'—'}</div></div>
-        <div><div class="form-label" style="margin-bottom:6px;">Priority</div><span class="badge ${pc}">${task.priority}</span></div>
-        <div><div class="form-label" style="margin-bottom:6px;">Status</div><span class="badge ${sc}">${task.status==='in-progress'?'In Progress':task.status.charAt(0).toUpperCase()+task.status.slice(1)}</span></div>
-      </div>
-      ${(isManager||isMine)?`<div class="divider"></div><div class="form-label" style="margin-bottom:10px;">Update Status</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm ${task.status==='todo'?'btn-warn':''}" onclick="updateStatus('${task.id}','todo')">📋 To Do</button>
-        <button class="btn btn-ghost btn-sm ${task.status==='in-progress'?'btn-warn':''}" onclick="updateStatus('${task.id}','in-progress')">⚡ In Progress</button>
-        <button class="btn btn-ghost btn-sm ${task.status==='done'?'btn-success':''}" onclick="updateStatus('${task.id}','done')">✅ Done</button>
-      </div>`:''}
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>
-    </div>`;
+      </div>`;
+    foot=`<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="submitTask()">Create Task</button>`;
   }
-
+  else if(type==='view-task'){
+    const t=S.tasks[data];if(!t){closeModal();return;}
+    const m=S.members[t.assignedTo];
+    const isMgr=S.user.role==='manager',isMine=S.user.id===t.assignedTo;
+    const pc={'urgent':'badge-urgent','high':'badge-high','medium':'badge-medium','low':'badge-low'}[t.priority]||'badge-todo';
+    const sc={'todo':'badge-todo','in-progress':'badge-progress','done':'badge-done'}[t.status]||'badge-todo';
+    const ov=isOv(t);
+    title=t.title;
+    body=`<div class="flex gap-4 mb-12" style="flex-wrap:wrap;">
+        <span class="badge ${pc}">${t.priority}</span>
+        <span class="badge ${sc}">${t.status==='in-progress'?'In Progress':t.status==='done'?'Done':'To Do'}</span>
+        ${ov?'<span class="badge badge-overdue">⚠ Overdue</span>':''}
+        ${t.recurring?'<span class="badge badge-recurring">🔄 Daily Recurring</span>':''}
+      </div>
+      ${t.description?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;">${t.description}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;">
+          <div class="form-label" style="margin-bottom:6px;">Assigned To</div>
+          <div class="flex gap-8">${m?`<div class="avatar" style="width:22px;height:22px;font-size:8px;background:${m.color}14;color:${m.color};">${m.avatar}</div><div><div style="font-weight:600;font-size:13px;">${m.name}</div>${m.department?`<span class="dept-tag">${m.department}</span>`:''}</div>`:'—'}</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;">
+          <div class="form-label" style="margin-bottom:6px;">Assigned Date</div>
+          <div style="font-weight:600;font-size:13px;">📌 ${fmt(t.createdAt)}</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;">
+          <div class="form-label" style="margin-bottom:6px;">Due Date</div>
+          <div style="font-weight:600;font-size:13px;color:${ov?'#dc2626':'inherit'}">📅 ${fmt(t.dueDate)}</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;">
+          <div class="form-label" style="margin-bottom:6px;">Priority</div>
+          <span class="badge ${pc}">${t.priority}</span>
+        </div>
+      </div>
+      ${(isMgr||isMine)?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:12px;">
+        <div class="form-label" style="margin-bottom:8px;">Update Status</div>
+        <div class="flex gap-6" style="flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm ${t.status==='todo'?'btn-warn':''}" onclick="updStatus('${t.id}','todo')">📋 To Do</button>
+          <button class="btn btn-ghost btn-sm ${t.status==='in-progress'?'btn-warn':''}" onclick="updStatus('${t.id}','in-progress')">⚡ In Progress</button>
+          <button class="btn btn-ghost btn-sm ${t.status==='done'?'btn-success':''}" onclick="updStatus('${t.id}','done')">✅ Mark Done</button>
+        </div>
+      </div>`:''}`;
+    foot=`${isMgr?`<button class="btn btn-info btn-sm" onclick="openModal('edit-task','${t.id}')">✏ Edit</button><button class="btn btn-danger btn-sm" onclick="delTask('${t.id}')">🗑 Delete</button>`:''}
+          <button class="btn btn-ghost" onclick="closeModal()">Close</button>`;
+  }
   else if(type==='edit-task'){
-    const task=state.tasks[data]; if(!task){closeModal();return;}
-    html=`<div class="modal"><h3>Edit Task</h3>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="m-title" value="${task.title}"></div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="m-desc" rows="3">${task.description||''}</textarea></div>
-      <div class="form-group"><label class="form-label">Assign To</label><select class="form-input" id="m-assign">${membersArr().map(m=>`<option value="${m.id}" ${m.id===task.assignedTo?'selected':''}>${m.name}${m.department?' ('+m.department+')':''}</option>`).join('')}</select></div>
-      <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="m-priority"><option value="low" ${task.priority==='low'?'selected':''}>Low</option><option value="medium" ${task.priority==='medium'?'selected':''}>Medium</option><option value="high" ${task.priority==='high'?'selected':''}>High</option><option value="urgent" ${task.priority==='urgent'?'selected':''}>Urgent</option></select></div>
-      <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="m-due" type="date" value="${task.dueDate||''}"></div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTask('${task.id}')">Save Changes</button></div>
-    </div>`;
-  }
-
-  else if(type==='add-announcement'||type==='edit-announcement'){
-    const a=type==='edit-announcement'?state.announcements[data]:null;
-    html=`<div class="modal"><h3>${type==='edit-announcement'?'Edit Announcement':'Post Announcement'}</h3>
-      <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="m-ann-title" placeholder="e.g. Meeting this Friday" value="${a?a.title:''}"></div>
-      <div class="form-group"><label class="form-label">Message</label><textarea class="form-input" id="m-ann-body" rows="4" placeholder="Write your message...">${a?a.body:''}</textarea></div>
-      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;"><input type="checkbox" id="m-ann-pin" ${a&&a.pinned?'checked':''}> 📌 Pin this announcement</label></div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="${type==='edit-announcement'?`saveAnnouncement('${data}')`:'submitAnnouncement()'}">${type==='edit-announcement'?'Save':'Post'}</button>
+    const t=S.tasks[data];if(!t){closeModal();return;}
+    title='Edit Task';
+    body=`<div class="form-group"><label class="form-label">Title</label><input class="form-input" id="t-ti" value="${t.title}"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="t-de">${t.description||''}</textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Assign To</label><select class="form-input" id="t-as">${mArr().map(m=>`<option value="${m.id}" ${m.id===t.assignedTo?'selected':''}>${m.name}${m.department?' · '+m.department:''}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="t-pr"><option value="low" ${t.priority==='low'?'selected':''}>Low</option><option value="medium" ${t.priority==='medium'?'selected':''}>Medium</option><option value="high" ${t.priority==='high'?'selected':''}>High</option><option value="urgent" ${t.priority==='urgent'?'selected':''}>Urgent</option></select></div>
       </div>
-    </div>`;
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="t-du" type="date" value="${t.dueDate||''}"></div>
+        <div class="form-group"><label class="form-label">Recurring Daily</label><select class="form-input" id="t-rc"><option value="" ${!t.recurring?'selected':''}>No — one time</option><option value="yes" ${t.recurring?'selected':''}>🔄 Yes — daily</option></select></div>
+      </div>`;
+    foot=`<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTask('${t.id}')">Save Changes</button>`;
+  }
+  else if(type==='add-ann'||type==='edit-ann'){
+    const a=type==='edit-ann'?S.anns[data]:null;
+    title=type==='edit-ann'?'Edit Announcement':'Post Announcement';
+    body=`<div class="form-group"><label class="form-label">Title</label><input class="form-input" id="a-ti" placeholder="e.g. Team meeting this Friday" value="${a?a.title:''}"></div>
+      <div class="form-group"><label class="form-label">Message</label><textarea class="form-input" id="a-bo" placeholder="Write your announcement..." style="min-height:100px;">${a?a.body:''}</textarea></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2)"><input type="checkbox" id="a-pi" ${a&&a.pinned?'checked':''}> 📌 Pin this announcement at top</label></div>`;
+    foot=`<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="${type==='edit-ann'?`saveAnn('${data}')`:'postAnn()'}">${type==='edit-ann'?'Save Changes':'Post Announcement'}</button>`;
   }
 
-  const overlay=document.createElement('div');
-  overlay.className='modal-overlay'; overlay.id='modal-overlay';
-  overlay.innerHTML=html;
-  overlay.onclick=e=>{if(e.target===overlay)closeModal();};
-  document.body.appendChild(overlay);
+  const ov=document.createElement('div');
+  ov.className='modal-overlay';ov.id='mo';
+  ov.innerHTML=`<div class="modal">
+    <div class="modal-head"><span class="modal-title">${title}</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot">${foot}</div>
+  </div>`;
+  ov.onclick=e=>{if(e.target===ov)closeModal();};
+  document.body.appendChild(ov);
 }
 
-// ── Actions ───────────────────────────────────────────────────────
-function openModal(type,data){ state.modal={type,data}; renderModal(); }
-function closeModal(){ state.modal=null; const o=document.getElementById('modal-overlay'); if(o) o.remove(); }
-function setNav(nav){ state.activeNav=nav; state.taskFilter='all'; render(); }
-function setFilter(f){ state.taskFilter=f; render(); }
-function bindNav(){ document.querySelectorAll('[data-nav]').forEach(el=>{ el.onclick=()=>setNav(el.dataset.nav); }); }
-function logout(){ state.currentUser=null; clearSession(); render(); }
+// ══════════════════════════════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════════════════════════════
+function openModal(type,data=''){S.modal={type,data};showModal();}
+function closeModal(){S.modal=null;const o=document.getElementById('mo');if(o)o.remove();}
+function setNav(nav){S.nav=nav;S.taskStatus='all';render();}
+function bindNav(){document.querySelectorAll('[data-nav]').forEach(el=>{el.onclick=()=>setNav(el.dataset.nav);});}
+function logout(){S.user=null;clearSession();render();}
+function setStat(v){S.taskStatus=v;render();}
+function setDateF(v){S.taskDate=v;if(v!=='custom')S.taskCustomDate='';render();}
+function setCustomD(v){S.taskCustomDate=v;render();}
+function setMemF(v){S.taskMember=v;render();}
+function clearF(){S.taskStatus='all';S.taskDate='all';S.taskMember='all';S.taskCustomDate='';render();}
+function setMQ(v){S.memberQ=v;render();setTimeout(()=>{const el=document.getElementById('mq-input');if(el){el.focus();el.setSelectionRange(v.length,v.length);}},30);}
 
 function addMember(){
-  const name=document.getElementById('m-name').value.trim();
-  const email=document.getElementById('m-email').value.trim().toLowerCase();
-  const password=document.getElementById('m-password').value.trim();
-  const department=document.getElementById('m-dept').value.trim();
-  if(!name||!email||!password){ alert('Please fill in name, email and password.'); return; }
-  if(Object.values(state.members).find(m=>m.email.toLowerCase()===email)){ alert('Email already exists.'); return; }
+  const nm=document.getElementById('m-nm').value.trim();
+  const em=document.getElementById('m-em').value.trim().toLowerCase();
+  const pw=document.getElementById('m-pw').value.trim();
+  const dp=document.getElementById('m-dp').value.trim();
+  if(!nm||!em||!pw){toast('Please fill name, email and password','error');return;}
+  if(mArr().find(m=>m.email.toLowerCase()===em)){toast('Email already exists','error');return;}
   const id='m'+Date.now();
-  const initials=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-  const color=DEPT_COLORS[membersArr().length%DEPT_COLORS.length];
-  const newMember={id,name,email,password,department,avatar:initials,color};
-  db.ref('members/'+id).set(newMember);
-  closeModal();
-  setTimeout(()=>{ state.modal={type:'view-credentials',data:id}; render(); }, 300);
+  const av=nm.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const color=COLORS[mArr().length%COLORS.length];
+  db.ref('members/'+id).set({id,name:nm,email:em,password:pw,department:dp,avatar:av,color});
+  toast(`${nm} added!`,'success');closeModal();
+  setTimeout(()=>{S.modal={type:'view-creds',data:id};render();},400);
+}
+function updMember(id){
+  const nm=document.getElementById('m-nm').value.trim();
+  const em=document.getElementById('m-em').value.trim().toLowerCase();
+  const pw=document.getElementById('m-pw').value.trim();
+  const dp=document.getElementById('m-dp').value.trim();
+  if(!nm||!em||!pw){toast('Please fill all fields','error');return;}
+  if(mArr().find(x=>x.email.toLowerCase()===em&&x.id!==id)){toast('Email already used','error');return;}
+  const av=nm.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  db.ref('members/'+id).update({name:nm,email:em,password:pw,department:dp,avatar:av});
+  if(S.user&&S.user.id===id){S.user={...S.user,name:nm,email:em,password:pw,department:dp,avatar:av};saveSession(S.user);}
+  toast('Member updated!','success');closeModal();
+}
+function delMember(id){if(!confirm('Remove this member?'))return;db.ref('members/'+id).remove();toast('Member removed','info');}
+function copyCreds(nm,em,pw){
+  const t=`Easy Solutions — Task Manager\n\nHello ${nm},\n\nYour login details:\n🌐 URL: https://sittukumar95.github.io/easysolutions-tasks\n📧 Email: ${em}\n🔒 Password: ${pw}\n\nPlease keep your password safe.`;
+  navigator.clipboard.writeText(t).then(()=>toast(`Credentials copied for ${nm}!`,'success')).catch(()=>prompt('Copy this:',t));
 }
 
-function updateMember(id){
-  const name=document.getElementById('m-name').value.trim();
-  const email=document.getElementById('m-email').value.trim().toLowerCase();
-  const password=document.getElementById('m-password').value.trim();
-  const department=document.getElementById('m-dept').value.trim();
-  if(!name||!email||!password){ alert('Please fill in all fields.'); return; }
-  const dup=Object.values(state.members).find(x=>x.email.toLowerCase()===email&&x.id!==id);
-  if(dup){ alert('Another member already uses this email.'); return; }
-  const initials=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-  const existing=state.members[id];
-  db.ref('members/'+id).update({name,email,password,department,avatar:initials});
-  if(state.currentUser&&state.currentUser.id===id){
-    state.currentUser={...state.currentUser,name,email,password,department,avatar:initials};
-    saveSession(state.currentUser);
-  }
-  closeModal(); render();
-}
-
-function deleteMember(id){
-  if(!confirm('Remove this member? Their tasks will remain.')) return;
-  db.ref('members/'+id).remove();
-}
-
-function copyCredentials(name,email,password){
-  const text=`Easy Solutions — Task Manager\n\nHello ${name},\n\nYour login details:\n🌐 URL: https://sittukumar95.github.io/easysolutions-tasks\n📧 Email: ${email}\n🔒 Password: ${password}\n\nPlease keep your password safe.`;
-  navigator.clipboard.writeText(text).then(()=>alert('✅ Copied! Paste and send to '+name)).catch(()=>prompt('Copy this:',text));
-}
-
-function submitTask(){
-  const title=document.getElementById('m-title').value.trim();
-  const desc=document.getElementById('m-desc').value.trim();
-  const assignedTo=document.getElementById('m-assign').value;
-  const priority=document.getElementById('m-priority').value;
-  const dueDate=document.getElementById('m-due').value;
-  if(!title||!assignedTo){ alert('Please fill in task title and assign to a member.'); return; }
+async function submitTask(){
+  const ti=document.getElementById('t-ti').value.trim();
+  const de=document.getElementById('t-de').value.trim();
+  const as=document.getElementById('t-as').value;
+  const pr=document.getElementById('t-pr').value;
+  const du=document.getElementById('t-du').value;
+  const rc=document.getElementById('t-rc').value==='yes';
+  if(!ti||!as){toast('Please fill title and assign to a member','error');return;}
   const id='t'+Date.now();
-  db.ref('tasks/'+id).set({id,title,description:desc,assignedTo,priority,status:'todo',dueDate,createdAt:new Date().toISOString().slice(0,10)});
-  closeModal();
+  await db.ref('tasks/'+id).set({id,title:ti,description:de,assignedTo:as,priority:pr,status:'todo',dueDate:du,createdAt:today(),recurring:rc});
+  const m=S.members[as];
+  if(m&&tgOk())await tg(`📋 <b>New Task Assigned</b>\n\n📌 <b>${ti}</b>\n👤 Assigned to: <b>${m.name}</b>${m.department?' ('+m.department+')':''}\n⚡ Priority: ${pr.toUpperCase()}\n📌 Assigned: ${fmt(today())}\n📅 Due: ${fmt(du)}\n${rc?'🔄 Recurring: Daily\n':''}\n${de?'📝 '+de:''}`);
+  toast(`Task assigned to ${m?m.name:'member'}!`,'success');closeModal();
 }
-
-function saveTask(id){
-  const title=document.getElementById('m-title').value.trim();
-  const desc=document.getElementById('m-desc').value.trim();
-  const assignedTo=document.getElementById('m-assign').value;
-  const priority=document.getElementById('m-priority').value;
-  const dueDate=document.getElementById('m-due').value;
-  db.ref('tasks/'+id).update({title,description:desc,assignedTo,priority,dueDate});
-  closeModal();
+async function saveTask(id){
+  const ti=document.getElementById('t-ti').value.trim();
+  const de=document.getElementById('t-de').value.trim();
+  const as=document.getElementById('t-as').value;
+  const pr=document.getElementById('t-pr').value;
+  const du=document.getElementById('t-du').value;
+  const rc=document.getElementById('t-rc').value==='yes';
+  await db.ref('tasks/'+id).update({title:ti,description:de,assignedTo:as,priority:pr,dueDate:du,recurring:rc});
+  toast('Task updated!','success');closeModal();
 }
-
-function deleteTask(id){ if(!confirm('Delete this task?')) return; db.ref('tasks/'+id).remove(); closeModal(); }
-
-function updateStatus(taskId,newStatus){
-  db.ref('tasks/'+taskId).update({status:newStatus});
-  closeModal();
+async function delTask(id){if(!confirm('Delete this task?'))return;await db.ref('tasks/'+id).remove();toast('Task deleted','info');closeModal();}
+async function updStatus(id,st){
+  const t=S.tasks[id];
+  await db.ref('tasks/'+id).update({status:st});
+  if(t&&tgOk()){
+    const m=S.members[t.assignedTo];
+    const e=st==='done'?'✅':st==='in-progress'?'⚡':'📋';
+    const sl=st==='in-progress'?'In Progress':st==='done'?'Done':'To Do';
+    await tg(`${e} <b>Task Status Updated</b>\n\n📌 <b>${t.title}</b>\n👤 ${m?m.name:'—'}\n🔄 New Status: <b>${sl}</b>\n📌 Assigned: ${fmt(t.createdAt)}\n📅 Due: ${fmt(t.dueDate)}`);
+  }
+  toast(st==='done'?'Task marked done! ✅':'Status updated','success');closeModal();
 }
-
-function submitAnnouncement(){
-  const title=document.getElementById('m-ann-title').value.trim();
-  const body=document.getElementById('m-ann-body').value.trim();
-  const pinned=document.getElementById('m-ann-pin').checked;
-  if(!title||!body){ alert('Please fill in all fields.'); return; }
+async function postAnn(){
+  const ti=document.getElementById('a-ti').value.trim();
+  const bo=document.getElementById('a-bo').value.trim();
+  const pi=document.getElementById('a-pi').checked;
+  if(!ti||!bo){toast('Please fill all fields','error');return;}
   const id='a'+Date.now();
-  db.ref('announcements/'+id).set({id,title,body,pinned,createdAt:new Date().toISOString().slice(0,10)});
-  closeModal();
+  await db.ref('announcements/'+id).set({id,title:ti,body:bo,pinned:pi,createdAt:today()});
+  if(tgOk())await tg(`📢 <b>New Announcement</b>${pi?' 📌':''}\n\n<b>${ti}</b>\n\n${bo}`);
+  toast('Announcement posted!','success');closeModal();
+}
+async function saveAnn(id){
+  const ti=document.getElementById('a-ti').value.trim();
+  const bo=document.getElementById('a-bo').value.trim();
+  const pi=document.getElementById('a-pi').checked;
+  await db.ref('announcements/'+id).update({title:ti,body:bo,pinned:pi});
+  toast('Announcement updated!','success');closeModal();
+}
+async function delAnn(id){if(!confirm('Delete this announcement?'))return;await db.ref('announcements/'+id).remove();toast('Deleted','info');}
+
+// ── PDF ───────────────────────────────────────────────────────────
+function dlPDF(){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();
+  const p=S.rptPeriod,{from,to}=dateRange(p);
+  const mems=S.rptMember==='all'?mArr():mArr().filter(m=>m.id===S.rptMember);
+  const all=tArr();let y=20;
+  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text('Easy Solutions — Work Report',20,y);y+=8;
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(130,110,60);
+  doc.text(`Period: ${p.toUpperCase()} · ${from} to ${to} · Generated: ${today()}`,20,y);y+=8;
+  doc.setTextColor(0,0,0);doc.line(20,y,190,y);y+=7;
+  mems.forEach(m=>{
+    const mt=all.filter(t=>t.assignedTo===m.id);
+    const done=mt.filter(t=>t.status==='done').length,ov=mt.filter(t=>isOv(t)).length,pct=mt.length?Math.round(done/mt.length*100):0;
+    if(y>245){doc.addPage();y=20;}
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+    doc.text(`${m.name}${m.department?' ('+m.department+')':''}`,20,y);y+=6;
+    doc.setFontSize(8.5);doc.setFont('helvetica','normal');doc.setTextColor(100,85,40);
+    doc.text(`${m.email} · Completion: ${pct}% · Done: ${done}/${mt.length} · Overdue: ${ov}`,20,y);y+=6;
+    doc.setTextColor(0,0,0);
+    mt.forEach(t=>{
+      if(y>270){doc.addPage();y=20;}
+      doc.setFontSize(8);
+      const s=t.status==='in-progress'?'In Progress':t.status==='done'?'Done':'Todo';
+      doc.text(`  • ${t.title} [${s}] Assigned:${t.createdAt||'—'} Due:${t.dueDate||'—'}${isOv(t)?' OVERDUE':''}${t.recurring?' DAILY':''}`,22,y);y+=5;
+    });
+    y+=3;doc.line(20,y,190,y);y+=5;
+  });
+  doc.save(`EasySolutions-Report-${p}-${today()}.pdf`);
+}
+function dlMyPDF(){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();
+  const me=S.user,p=S.rptPeriod,{from,to}=dateRange(p);
+  const myT=tArr().filter(t=>t.assignedTo===me.id);
+  const done=myT.filter(t=>t.status==='done').length,ov=myT.filter(t=>isOv(t)).length,pct=myT.length?Math.round(done/myT.length*100):0;
+  let y=20;
+  doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text('Easy Solutions — My Work Report',20,y);y+=8;
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(130,110,60);
+  doc.text(`${me.name} · ${me.department||''} · ${p.toUpperCase()} · ${from} to ${to}`,20,y);y+=7;
+  doc.setTextColor(0,0,0);doc.line(20,y,190,y);y+=6;
+  doc.text(`Total: ${myT.length}  Done: ${done}  Active: ${myT.filter(t=>t.status==='in-progress').length}  Overdue: ${ov}  Rate: ${pct}%`,20,y);y+=8;
+  doc.line(20,y,190,y);y+=6;
+  myT.forEach(t=>{
+    if(y>270){doc.addPage();y=20;}
+    const s=t.status==='in-progress'?'In Progress':t.status==='done'?'Done':'Todo';
+    doc.setFontSize(8.5);
+    doc.text(`• ${t.title}  [${s}]  Assigned: ${t.createdAt||'—'}  Due: ${t.dueDate||'—'}${isOv(t)?' OVERDUE':''}${t.recurring?' DAILY':''}`,20,y);y+=6;
+  });
+  doc.save(`MyReport-${me.name.replace(/\s/g,'-')}-${p}-${today()}.pdf`);
 }
 
-function saveAnnouncement(id){
-  const title=document.getElementById('m-ann-title').value.trim();
-  const body=document.getElementById('m-ann-body').value.trim();
-  const pinned=document.getElementById('m-ann-pin').checked;
-  db.ref('announcements/'+id).update({title,body,pinned});
-  closeModal();
-}
-
-function deleteAnnouncement(id){ if(!confirm('Delete this announcement?')) return; db.ref('announcements/'+id).remove(); }
-
-// ── Init ──────────────────────────────────────────────────────────
-render(); // show loading screen immediately
-startListeners(); // connect to Firebase
+// ── INIT ──────────────────────────────────────────────────────────
+render();initListeners();
 </script>
 </body>
 </html>
